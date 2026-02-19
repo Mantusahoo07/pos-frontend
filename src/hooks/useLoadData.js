@@ -13,14 +13,17 @@ const useLoadData = () => {
     const fetchUser = async () => {
       try {
         const { data } = await getUserData();
-        console.log(data);
+        console.log("User data fetched:", data);
         const { _id, name, email, phone, role } = data.data;
         dispatch(setUser({ _id, name, email, phone, role }));
+        setIsLoading(false);
       } catch (error) {
+        console.log("Error fetching user:", error.response?.status);
         dispatch(removeUser());
-        navigate("/auth");
-        console.log(error);
-      }finally{
+        // Only navigate if we're not already on the auth page
+        if (window.location.pathname !== '/auth') {
+          navigate("/auth");
+        }
         setIsLoading(false);
       }
     };
