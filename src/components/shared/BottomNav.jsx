@@ -60,57 +60,74 @@ const BottomNav = () => {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around items-center z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#262626] px-2 sm:px-4 h-16 flex justify-around items-center z-50">
+        {/* Home Button */}
         <button
           onClick={() => navigate("/")}
           className={`flex items-center justify-center font-bold transition-colors duration-200 ${
             isActive("/") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab] hover:text-[#f5f5f5]"
-          } w-1/4 sm:w-[300px] rounded-[20px] py-2`}
+          } w-1/4 sm:w-32 rounded-[20px] py-2`}
         >
-          <FaHome className="text-xl sm:mr-2" /> 
-          <span className="hidden sm:inline">Home</span>
+          <FaHome className="text-xl sm:text-lg sm:mr-2" /> 
+          <span className="hidden sm:inline text-sm">Home</span>
         </button>
         
+        {/* Orders Button */}
         <button
           onClick={() => navigate("/orders")}
           className={`flex items-center justify-center font-bold transition-colors duration-200 ${
             isActive("/orders") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab] hover:text-[#f5f5f5]"
-          } w-1/4 sm:w-[300px] rounded-[20px] py-2`}
+          } w-1/4 sm:w-32 rounded-[20px] py-2`}
         >
-          <MdOutlineReorder className="text-xl sm:mr-2" /> 
-          <span className="hidden sm:inline">Orders</span>
+          <MdOutlineReorder className="text-xl sm:text-lg sm:mr-2" /> 
+          <span className="hidden sm:inline text-sm">Orders</span>
         </button>
         
+        {/* Tables Button */}
         <button
           onClick={() => navigate("/tables")}
           className={`flex items-center justify-center font-bold transition-colors duration-200 ${
             isActive("/tables") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab] hover:text-[#f5f5f5]"
-          } w-1/4 sm:w-[300px] rounded-[20px] py-2`}
+          } w-1/4 sm:w-32 rounded-[20px] py-2`}
         >
-          <MdTableBar className="text-xl sm:mr-2" /> 
-          <span className="hidden sm:inline">Tables</span>
+          <MdTableBar className="text-xl sm:text-lg sm:mr-2" /> 
+          <span className="hidden sm:inline text-sm">Tables</span>
         </button>
         
+        {/* More Button */}
         <button 
-          className="flex items-center justify-center font-bold text-[#ababab] hover:text-[#f5f5f5] w-1/4 sm:w-[300px] transition-colors duration-200"
+          className="flex items-center justify-center font-bold text-[#ababab] hover:text-[#f5f5f5] w-1/4 sm:w-32 transition-colors duration-200"
         >
-          <CiCircleMore className="text-xl sm:mr-2" /> 
-          <span className="hidden sm:inline">More</span>
+          <CiCircleMore className="text-xl sm:text-lg sm:mr-2" /> 
+          <span className="hidden sm:inline text-sm">More</span>
         </button>
 
+        {/* Centered Create Order Button - Responsive sizing */}
         <button
           disabled={isActive("/tables") || isActive("/menu")}
           onClick={openModal}
-          className={`absolute -top-6 bg-[#F6B100] text-[#f5f5f5] rounded-full p-3 sm:p-4 items-center transition-transform duration-200 hover:scale-110 ${
-            (isActive("/tables") || isActive("/menu")) ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          className={`absolute -top-6 sm:-top-8 bg-[#F6B100] text-[#f5f5f5] rounded-full 
+                     p-3 sm:p-3 md:p-4 lg:p-5
+                     flex items-center justify-center
+                     transition-transform duration-200 hover:scale-110
+                     shadow-lg hover:shadow-xl
+                     ${(isActive("/tables") || isActive("/menu")) ? "opacity-50 cursor-not-allowed" : ""}`}
+          style={{
+            width: 'clamp(48px, 8vw, 64px)',
+            height: 'clamp(48px, 8vw, 64px)',
+          }}
+          title="Create New Order"
         >
-          <BiSolidDish size={24} className="sm:size-40" />
+          <BiSolidDish 
+            size={24} 
+            className="sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8"
+          />
         </button>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Create New Order">
         <div className="space-y-4 p-4">
+          {/* Guest count */}
           <div>
             <label className="block mb-2 text-sm font-medium text-[#ababab]">
               Number of Guests <span className="text-red-500">*</span>
@@ -136,6 +153,7 @@ const BottomNav = () => {
             </div>
           </div>
 
+          {/* Customer Name - Optional */}
           <div>
             <label className="block text-[#ababab] mb-2 text-sm font-medium">
               Customer Name <span className="text-gray-500">(Optional)</span>
@@ -149,6 +167,7 @@ const BottomNav = () => {
             />
           </div>
 
+          {/* Phone - Optional */}
           <div>
             <label className="block text-[#ababab] mb-2 text-sm font-medium">
               Phone Number <span className="text-gray-500">(Optional)</span>
@@ -162,6 +181,7 @@ const BottomNav = () => {
             />
           </div>
 
+          {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="button"
@@ -175,7 +195,7 @@ const BottomNav = () => {
               onClick={handleCreateOrder}
               className="w-full sm:flex-1 bg-[#F6B100] text-[#1f1f1f] rounded-lg py-3 font-semibold hover:bg-yellow-500 transition-colors"
             >
-              Continue
+              Continue to Tables
             </button>
           </div>
         </div>
