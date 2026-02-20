@@ -13,6 +13,7 @@ import { removeAllItems } from "../../redux/slices/cartSlice";
 import { removeCustomer } from "../../redux/slices/customerSlice";
 import Invoice from "../invoice/Invoice";
 import { useNavigate } from "react-router-dom";
+import { FaMoneyBillWave, FaCreditCard, FaGooglePay, FaPhone } from "react-icons/fa";
 
 function loadScript(src) {
   return new Promise((resolve) => {
@@ -43,6 +44,14 @@ const Bill = () => {
   const [showInvoice, setShowInvoice] = useState(false);
   const [orderInfo, setOrderInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Payment options
+  const paymentOptions = [
+    { id: "Cash", name: "Cash", icon: <FaMoneyBillWave size={24} />, color: "bg-green-600" },
+    { id: "Card", name: "Card", icon: <FaCreditCard size={24} />, color: "bg-blue-600" },
+    { id: "UPI", name: "UPI", icon: <FaGooglePay size={24} />, color: "bg-purple-600" },
+    { id: "Online", name: "Online", icon: <FaPhone size={24} />, color: "bg-yellow-600" },
+  ];
 
   // Validate before placing order
   const validateOrder = () => {
@@ -76,15 +85,15 @@ const Bill = () => {
 
     setIsProcessing(true);
 
-    if (paymentMethod === "Online") {
+    if (paymentMethod === "Online" || paymentMethod === "Card" || paymentMethod === "UPI") {
       await handleOnlinePayment();
     } else {
       // Cash payment - direct order
       const orderData = {
         customerDetails: {
-          name: customerData.customerName,
-          phone: customerData.customerPhone,
-          guests: customerData.guests,
+          name: customerData.customerName || `Guest ${Math.floor(Math.random() * 1000)}`,
+          phone: customerData.customerPhone || "",
+          guests: customerData.guests || 1,
         },
         orderStatus: "In Progress",
         bills: {
@@ -134,7 +143,7 @@ const Bill = () => {
         amount: data.order.amount,
         currency: data.order.currency,
         name: "Restro POS",
-        description: "Payment for your order",
+        description: `Payment for Table ${customerData.table?.tableNo || ""}`,
         order_id: data.order.id,
         handler: async function (response) {
           // Verify payment
@@ -146,9 +155,9 @@ const Bill = () => {
             // Place the order after successful payment
             const orderData = {
               customerDetails: {
-                name: customerData.customerName,
-                phone: customerData.customerPhone,
-                guests: customerData.guests,
+                name: customerData.customerName || `Guest ${Math.floor(Math.random() * 1000)}`,
+                phone: customerData.customerPhone || "",
+                guests: customerData.guests || 1,
               },
               orderStatus: "In Progress",
               bills: {
@@ -177,8 +186,8 @@ const Bill = () => {
           }
         },
         prefill: {
-          name: customerData.customerName,
-          contact: customerData.customerPhone,
+          name: customerData.customerName || "Guest",
+          contact: customerData.customerPhone || "",
         },
         theme: { color: "#f6b100" },
         modal: {
@@ -239,9 +248,6 @@ const Bill = () => {
     mutationFn: (reqData) => updateTable(reqData),
     onSuccess: (resData) => {
       console.log("Table updated:", resData);
-      // Clear cart and customer data after successful order
-      dispatch(removeAllItems());
-      dispatch(removeCustomer());
     },
     onError: (error) => {
       console.error("Table update error:", error);
@@ -250,13 +256,16 @@ const Bill = () => {
 
   const handlePrintAndClose = () => {
     setShowInvoice(false);
-    navigate("/"); // Go back to home after order completion
+    dispatch(removeAllItems());
+    dispatch(removeCustomer());
+    navigate("/");
   };
 
+  // If cart is empty, show empty state
   if (cartData.length === 0) {
     return (
       <div className="px-5 py-10 text-center">
-        <p className="text-[#ababab]">Your cart is empty</p>
+        <p className="text-[#ababab] text-lg">Your cart is empty</p>
         <p className="text-xs text-[#ababab] mt-2">Add items from the menu to place an order</p>
       </div>
     );
@@ -264,69 +273,87 @@ const Bill = () => {
 
   return (
     <>
-      <div className="px-5 py-4">
+      <div className="px-5 py-4 overflow-y-auto max-h-[calc(100vh-300px)]">
         {/* Bill Summary */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-[#ababab] font-medium">
-              Subtotal ({cartData.length} items)
-            </p>
-            <h1 className="text-[#f5f5f5] text-md font-bold">
-              ₹{total.toFixed(2)}
-            </h1>
-          </div>
+          <h3 className="text-[#f5f5f5] font-semibold text-lg">Bill Summary</h3>
           
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-[#ababab] font-medium">Tax (5.25%)</p>
-            <h1 className="text-[#f5f5f5] text-md font-bold">
-              ₹{tax.toFixed(2)}
-            </h1>
+          <div className="space-y-2">
+            {cartData.map((item, index) => (
+              <div key={index} className="flex justify-between text-sm">
+                <span className="text-[#ababab]">
+                  {item.name} x{item.quantity}
+                </span>
+                <span className="text-[#f5f5f5]">₹{item.price}</span>
+              </div>
+            ))}
           </div>
-          
-          <div className="flex items-center justify-between pt-2 border-t border-[#2a2a2a]">
-            <p className="text-sm text-[#f5f5f5] font-semibold">Total</p>
-            <h1 className="text-[#f6b100] text-xl font-bold">
-              ₹{totalPriceWithTax.toFixed(2)}
-            </h1>
+
+          <div className="border-t border-[#2a2a2a] pt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-[#ababab]">Subtotal</p>
+              <p className="text-[#f5f5f5] font-semibold">₹{total.toFixed(2)}</p>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-[#ababab]">Tax (5.25%)</p>
+              <p className="text-[#f5f5f5] font-semibold">₹{tax.toFixed(2)}</p>
+            </div>
+            
+            <div className="flex items-center justify-between pt-2 border-t border-[#2a2a2a]">
+              <p className="text-base text-[#f5f5f5] font-bold">Total</p>
+              <p className="text-xl text-[#f6b100] font-bold">₹{totalPriceWithTax.toFixed(2)}</p>
+            </div>
           </div>
         </div>
 
         {/* Payment Method Selection */}
         <div className="mt-6">
-          <p className="text-sm text-[#ababab] font-medium mb-3">Payment Method</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setPaymentMethod("Cash")}
-              className={`flex-1 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                paymentMethod === "Cash" 
-                  ? "bg-[#f6b100] text-[#1f1f1f]" 
-                  : "bg-[#1f1f1f] text-[#ababab] hover:bg-[#2a2a2a]"
-              }`}
-            >
-              💵 Cash
-            </button>
-            <button
-              onClick={() => setPaymentMethod("Online")}
-              className={`flex-1 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                paymentMethod === "Online" 
-                  ? "bg-[#f6b100] text-[#1f1f1f]" 
-                  : "bg-[#1f1f1f] text-[#ababab] hover:bg-[#2a2a2a]"
-              }`}
-            >
-              📱 Online
-            </button>
+          <p className="text-sm text-[#ababab] font-medium mb-3">Select Payment Method</p>
+          <div className="grid grid-cols-2 gap-3">
+            {paymentOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => setPaymentMethod(option.id)}
+                className={`flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200 ${
+                  paymentMethod === option.id
+                    ? `${option.color} text-white scale-105 shadow-lg`
+                    : "bg-[#1f1f1f] text-[#ababab] hover:bg-[#2a2a2a]"
+                }`}
+              >
+                <div className="mb-2">{option.icon}</div>
+                <span className="text-sm font-semibold">{option.name}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-6 space-y-3">
+        {/* Table Info */}
+        {customerData.table && (
+          <div className="mt-4 p-3 bg-[#1f1f1f] rounded-lg">
+            <p className="text-sm text-[#ababab]">
+              Table: <span className="text-[#f5f5f5] font-semibold">{customerData.table.tableNo}</span>
+            </p>
+            {customerData.customerName && (
+              <p className="text-sm text-[#ababab] mt-1">
+                Customer: <span className="text-[#f5f5f5]">{customerData.customerName}</span>
+              </p>
+            )}
+            <p className="text-sm text-[#ababab] mt-1">
+              Guests: <span className="text-[#f5f5f5]">{customerData.guests || 1}</span>
+            </p>
+          </div>
+        )}
+
+        {/* Place Order Button */}
+        <div className="mt-6">
           <button
             onClick={handlePlaceOrder}
-            disabled={isProcessing || !paymentMethod || cartData.length === 0}
+            disabled={isProcessing || !paymentMethod}
             className={`w-full py-4 rounded-lg font-bold text-lg transition-all duration-200 ${
-              isProcessing || !paymentMethod || cartData.length === 0
+              isProcessing || !paymentMethod
                 ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                : "bg-[#f6b100] text-[#1f1f1f] hover:bg-yellow-500"
+                : "bg-[#f6b100] text-[#1f1f1f] hover:bg-yellow-500 hover:scale-105"
             }`}
           >
             {isProcessing ? (
@@ -335,29 +362,17 @@ const Bill = () => {
                 Processing...
               </span>
             ) : (
-              "Place Order"
+              `Place Order • ₹${totalPriceWithTax.toFixed(2)}`
             )}
-          </button>
-
-          <button
-            onClick={() => window.print()}
-            className="w-full py-3 rounded-lg bg-[#1f1f1f] text-[#ababab] font-semibold hover:bg-[#2a2a2a] transition-colors"
-          >
-            🖨️ Print Bill
           </button>
         </div>
 
-        {/* Table Info */}
-        {customerData.table && (
-          <div className="mt-4 p-3 bg-[#1f1f1f] rounded-lg">
+        {/* Selected Payment Method Indicator */}
+        {paymentMethod && (
+          <div className="mt-3 text-center">
             <p className="text-xs text-[#ababab]">
-              Table: <span className="text-[#f5f5f5] font-semibold">{customerData.table.tableNo}</span>
+              Selected: <span className="text-[#f6b100] font-semibold">{paymentMethod}</span>
             </p>
-            {customerData.customerName && (
-              <p className="text-xs text-[#ababab] mt-1">
-                Customer: <span className="text-[#f5f5f5]">{customerData.customerName}</span>
-              </p>
-            )}
           </div>
         )}
       </div>
