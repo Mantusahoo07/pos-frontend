@@ -7,17 +7,21 @@ import CustomerInfo from "../components/menu/CustomerInfo";
 import CartInfo from "../components/menu/CartInfo";
 import Bill from "../components/menu/Bill";
 import { useSelector } from "react-redux";
+import { useMenu } from "../hooks/useMenu";
+import FullScreenLoader from "../components/shared/FullScreenLoader";
 
 const Menu = () => {
-
-    useEffect(() => {
-      document.title = "POS | Menu"
-    }, [])
+  useEffect(() => {
+    document.title = "POS | Menu";
+  }, []);
 
   const customerData = useSelector((state) => state.customer);
+  const { isLoading } = useMenu();
+
+  if (isLoading) return <FullScreenLoader />;
 
   return (
-    <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden flex gap-3">
+    <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden flex gap-3 pb-24">
       {/* Left Div */}
       <div className="flex-[3]">
         <div className="flex items-center justify-between px-10 py-4">
@@ -32,7 +36,7 @@ const Menu = () => {
               <MdRestaurantMenu className="text-[#f5f5f5] text-4xl" />
               <div className="flex flex-col items-start">
                 <h1 className="text-md text-[#f5f5f5] font-semibold tracking-wide">
-                  {customerData.customerName || "Customer Name"}
+                  {customerData.customerName || "Customer"}
                 </h1>
                 <p className="text-xs text-[#ababab] font-medium">
                   Table : {customerData.table?.tableNo || "N/A"}
@@ -44,15 +48,13 @@ const Menu = () => {
 
         <MenuContainer />
       </div>
-      {/* Right Div */}
+      
+      {/* Right Div - Cart */}
       <div className="flex-[1] bg-[#1a1a1a] mt-4 mr-3 h-[780px] rounded-lg pt-2">
-        {/* Customer Info */}
         <CustomerInfo />
         <hr className="border-[#2a2a2a] border-t-2" />
-        {/* Cart Items */}
         <CartInfo />
         <hr className="border-[#2a2a2a] border-t-2" />
-        {/* Bills */}
         <Bill />
       </div>
 
