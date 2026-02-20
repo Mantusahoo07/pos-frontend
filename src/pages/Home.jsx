@@ -47,7 +47,7 @@ const Home = () => {
   const bookedTables = tablesData?.filter(table => table.status === "Booked").length || 0;
 
   return (
-    <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden flex gap-3 pb-24">
+    <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden flex gap-3 pb-16">
       {/* Left Div */}
       <div className="flex-[3]">
         <Greetings />
