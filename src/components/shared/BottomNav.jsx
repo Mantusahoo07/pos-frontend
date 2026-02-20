@@ -7,13 +7,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Modal from "./Modal";
 import { useDispatch } from "react-redux";
 import { setCustomer } from "../../redux/slices/customerSlice";
+import { enqueueSnackbar } from "notistack";
 
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [guestCount, setGuestCount] = useState(0);
+  const [guestCount, setGuestCount] = useState(1); // Default to 1
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -22,7 +23,7 @@ const BottomNav = () => {
     setIsModalOpen(false);
     setName("");
     setPhone("");
-    setGuestCount(0);
+    setGuestCount(1);
   };
 
   const increment = () => {
@@ -31,19 +32,29 @@ const BottomNav = () => {
   };
   
   const decrement = () => {
-    if (guestCount <= 0) return;
+    if (guestCount <= 1) return; // Minimum 1 guest
     setGuestCount((prev) => prev - 1);
   };
 
   const isActive = (path) => location.pathname === path;
 
   const handleCreateOrder = () => {
-    if (!name || !phone || guestCount === 0) {
-      // You might want to show an error message here
+    // Only guests is mandatory, name and phone are optional
+    if (guestCount === 0) {
+      enqueueSnackbar("Please enter number of guests!", { variant: "warning" });
       return;
     }
-    // send the data to store
-    dispatch(setCustomer({ name, phone, guests: guestCount }));
+
+    // Generate anonymous name if not provided
+    const customerName = name.trim() || `Guest ${Math.floor(Math.random() * 1000)}`;
+    
+    // Send data to store
+    dispatch(setCustomer({ 
+      name: customerName, 
+      phone: phone.trim() || "", 
+      guests: guestCount 
+    }));
+    
     navigate("/tables");
     closeModal();
   };
@@ -95,68 +106,87 @@ const BottomNav = () => {
         </button>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={closeModal} title="Create Order">
-        <div>
-          <label className="block text-[#ababab] mb-2 text-sm font-medium">
-            Customer Name
-          </label>
-          <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              type="text"
-              placeholder="Enter customer name"
-              className="bg-transparent flex-1 text-white focus:outline-none"
-            />
+      <Modal isOpen={isModalOpen} onClose={closeModal} title="Create New Order">
+        <div className="space-y-4">
+          {/* Guest count - Required */}
+          <div>
+            <label className="block mb-2 text-sm font-medium text-[#ababab]">
+              Number of Guests <span className="text-red-500">*</span>
+            </label>
+            <div className="flex items-center justify-between bg-[#1f1f1f] px-4 py-3 rounded-lg">
+              <button
+                type="button"
+                onClick={decrement}
+                className="text-yellow-500 text-2xl hover:text-yellow-600 w-8 h-8 flex items-center justify-center"
+              >
+                &minus;
+              </button>
+              <span className="text-white font-semibold">
+                {guestCount} {guestCount === 1 ? "Guest" : "Guests"}
+              </span>
+              <button
+                type="button"
+                onClick={increment}
+                className="text-yellow-500 text-2xl hover:text-yellow-600 w-8 h-8 flex items-center justify-center"
+              >
+                &#43;
+              </button>
+            </div>
           </div>
-        </div>
-        <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
-            Customer Phone
-          </label>
-          <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              type="tel"
-              placeholder="+91-9999999999"
-              className="bg-transparent flex-1 text-white focus:outline-none"
-            />
+
+          {/* Customer Name - Optional */}
+          <div>
+            <label className="block text-[#ababab] mb-2 text-sm font-medium">
+              Customer Name <span className="text-gray-500">(Optional)</span>
+            </label>
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                type="text"
+                placeholder="Enter customer name"
+                className="bg-transparent flex-1 text-white focus:outline-none"
+              />
+            </div>
+            <p className="text-xs text-[#ababab] mt-1">
+              If left empty, will be set as "Guest XXX"
+            </p>
           </div>
-        </div>
-        <div>
-          <label className="block mb-2 mt-3 text-sm font-medium text-[#ababab]">
-            Guest
-          </label>
-          <div className="flex items-center justify-between bg-[#1f1f1f] px-4 py-3 rounded-lg">
+
+          {/* Customer Phone - Optional */}
+          <div>
+            <label className="block text-[#ababab] mb-2 text-sm font-medium">
+              Phone Number <span className="text-gray-500">(Optional)</span>
+            </label>
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                type="tel"
+                placeholder="+91-9999999999"
+                className="bg-transparent flex-1 text-white focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
             <button
-              onClick={decrement}
-              className="text-yellow-500 text-2xl hover:text-yellow-600 w-8 h-8 flex items-center justify-center"
+              type="button"
+              onClick={closeModal}
+              className="flex-1 bg-gray-600 text-white rounded-lg py-3 hover:bg-gray-700 transition-colors"
             >
-              &minus;
+              Cancel
             </button>
-            <span className="text-white font-semibold">
-              {guestCount} {guestCount === 1 ? "Person" : "Persons"}
-            </span>
             <button
-              onClick={increment}
-              className="text-yellow-500 text-2xl hover:text-yellow-600 w-8 h-8 flex items-center justify-center"
+              type="button"
+              onClick={handleCreateOrder}
+              className="flex-1 bg-[#F6B100] text-[#1f1f1f] rounded-lg py-3 font-semibold hover:bg-yellow-500 transition-colors"
             >
-              &#43;
+              Continue to Tables
             </button>
           </div>
         </div>
-        <button
-          onClick={handleCreateOrder}
-          disabled={!name || !phone || guestCount === 0}
-          className={`w-full rounded-lg py-3 mt-8 font-bold transition-colors duration-200 ${
-            !name || !phone || guestCount === 0
-              ? "bg-gray-500 text-gray-300 cursor-not-allowed"
-              : "bg-[#F6B100] text-[#f5f5f5] hover:bg-yellow-600"
-          }`}
-        >
-          Create Order
-        </button>
       </Modal>
     </>
   );
