@@ -4,20 +4,34 @@ import { getPayments } from "../../https";
 import { enqueueSnackbar } from "notistack";
 import { formatDateAndTime } from "../../utils";
 import { FaRupeeSign, FaCheckCircle, FaTimesCircle, FaClock } from "react-icons/fa";
-import { MdPayment, MdReceipt } from "react-icons/md";
+import { MdPayment, MdReceipt, MdRefresh } from "react-icons/md";
 
 const PaymentManagement = () => {
   const [filter, setFilter] = useState("all");
   const [dateRange, setDateRange] = useState("all");
 
   // Fetch payments
-  const { data: paymentsData, isLoading, error, refetch } = useQuery({
+  const { data: paymentsData, isLoading, error, refetch, isError } = useQuery({
     queryKey: ["payments", filter, dateRange],
     queryFn: async () => {
-      const response = await getPayments();
-      return response.data.data || [];
+      try {
+        const response = await getPayments();
+        return response.data.data || [];
+      } catch (err) {
+        console.error("Error fetching payments:", err);
+        throw err;
+      }
     },
   });
+
+  // Show error message if fetch fails
+  React.useEffect(() => {
+    if (isError) {
+      enqueueSnackbar("Failed to load payment data. Please try again.", { 
+        variant: "error" 
+      });
+    }
+  }, [isError]);
 
   // Filter payments based on status and date
   const filteredPayments = paymentsData?.filter(payment => {
@@ -41,13 +55,13 @@ const PaymentManagement = () => {
       }
     }
     return true;
-  });
+  }) || [];
 
   // Calculate totals
-  const totalAmount = filteredPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-  const successfulCount = filteredPayments?.filter(p => p.status === "captured").length || 0;
-  const failedCount = filteredPayments?.filter(p => p.status === "failed").length || 0;
-  const pendingCount = filteredPayments?.filter(p => p.status === "created").length || 0;
+  const totalAmount = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const successfulCount = filteredPayments.filter(p => p.status === "captured").length;
+  const failedCount = filteredPayments.filter(p => p.status === "failed").length;
+  const pendingCount = filteredPayments.filter(p => p.status === "created").length;
 
   if (isLoading) {
     return (
@@ -59,13 +73,14 @@ const PaymentManagement = () => {
 
   if (error) {
     return (
-      <div className="bg-[#262626] rounded-lg p-6 text-center">
-        <p className="text-red-500">Error loading payments: {error.message}</p>
+      <div className="bg-[#262626] rounded-lg p-8 text-center">
+        <p className="text-red-500 mb-4">Error loading payments: {error.message}</p>
+        <p className="text-[#ababab] mb-6">The payment endpoint might not be configured on the server.</p>
         <button 
           onClick={() => refetch()}
-          className="mt-4 bg-[#f6b100] text-[#1f1f1f] px-4 py-2 rounded-lg"
+          className="bg-[#f6b100] text-[#1f1f1f] px-6 py-3 rounded-lg font-semibold flex items-center gap-2 mx-auto hover:bg-yellow-500 transition-colors"
         >
-          Retry
+          <MdRefresh size={20} /> Retry
         </button>
       </div>
     );
@@ -158,23 +173,31 @@ const PaymentManagement = () => {
 
       {/* Payments Table */}
       <div className="bg-[#262626] rounded-lg p-6">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-[#f5f5f5]">
-            <thead className="bg-[#333] text-[#ababab]">
-              <tr>
-                <th className="p-4">Payment ID</th>
-                <th className="p-4">Order ID</th>
-                <th className="p-4">Amount</th>
-                <th className="p-4">Method</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Customer</th>
-                <th className="p-4">Date & Time</th>
-                <th className="p-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPayments?.length > 0 ? (
-                filteredPayments.map((payment) => (
+        {filteredPayments.length === 0 ? (
+          <div className="text-center py-12">
+            <MdPayment className="text-6xl text-[#ababab] mx-auto mb-4" />
+            <p className="text-[#ababab] text-lg">No payment transactions found</p>
+            <p className="text-[#ababab] text-sm mt-2">
+              Payments will appear here once customers complete transactions
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[#f5f5f5]">
+              <thead className="bg-[#333] text-[#ababab]">
+                <tr>
+                  <th className="p-4">Payment ID</th>
+                  <th className="p-4">Order ID</th>
+                  <th className="p-4">Amount</th>
+                  <th className="p-4">Method</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Customer</th>
+                  <th className="p-4">Date & Time</th>
+                  <th className="p-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPayments.map((payment) => (
                   <tr key={payment._id} className="border-b border-gray-700 hover:bg-[#333]">
                     <td className="p-4 font-mono text-sm">
                       {payment.paymentId?.slice(-8) || "N/A"}
@@ -209,58 +232,55 @@ const PaymentManagement = () => {
                       {payment.createdAt ? formatDateAndTime(payment.createdAt) : "N/A"}
                     </td>
                     <td className="p-4">
-                      <button
-                        onClick={() => window.open(`https://dashboard.razorpay.com/app/payments/${payment.paymentId}`, '_blank')}
-                        className="text-[#f6b100] hover:text-yellow-500 transition-colors"
-                        title="View in Razorpay Dashboard"
-                      >
-                        <MdReceipt size={20} />
-                      </button>
+                      {payment.paymentId && (
+                        <button
+                          onClick={() => window.open(`https://dashboard.razorpay.com/app/payments/${payment.paymentId}`, '_blank')}
+                          className="text-[#f6b100] hover:text-yellow-500 transition-colors"
+                          title="View in Razorpay Dashboard"
+                        >
+                          <MdReceipt size={20} />
+                        </button>
+                      )}
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="text-center p-8 text-[#ababab]">
-                    No payment transactions found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Export Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => {
-            // Convert to CSV and download
-            const headers = ['Payment ID', 'Order ID', 'Amount', 'Method', 'Status', 'Email', 'Contact', 'Date'];
-            const csvData = filteredPayments?.map(p => [
-              p.paymentId,
-              p.orderId,
-              p.amount,
-              p.method,
-              p.status,
-              p.email,
-              p.contact,
-              new Date(p.createdAt).toLocaleString()
-            ]);
-            
-            const csv = [headers, ...csvData].map(row => row.join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `payments-${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-          }}
-          className="bg-[#1f1f1f] text-[#f5f5f5] px-6 py-2 rounded-lg hover:bg-[#2a2a2a] transition-colors flex items-center gap-2"
-        >
-          Export to CSV
-        </button>
-      </div>
+      {/* Export Button - only show if there are payments */}
+      {filteredPayments.length > 0 && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => {
+              const headers = ['Payment ID', 'Order ID', 'Amount', 'Method', 'Status', 'Email', 'Contact', 'Date'];
+              const csvData = filteredPayments.map(p => [
+                p.paymentId,
+                p.orderId,
+                p.amount,
+                p.method,
+                p.status,
+                p.email,
+                p.contact,
+                new Date(p.createdAt).toLocaleString()
+              ]);
+              
+              const csv = [headers, ...csvData].map(row => row.join(',')).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `payments-${new Date().toISOString().split('T')[0]}.csv`;
+              a.click();
+            }}
+            className="bg-[#1f1f1f] text-[#f5f5f5] px-6 py-2 rounded-lg hover:bg-[#2a2a2a] transition-colors flex items-center gap-2"
+          >
+            Export to CSV
+          </button>
+        </div>
+      )}
     </div>
   );
 };
