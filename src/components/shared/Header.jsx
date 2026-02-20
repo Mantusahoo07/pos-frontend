@@ -19,12 +19,20 @@ const Header = () => {
   const logoutMutation = useMutation({
     mutationFn: () => logout(),
     onSuccess: (data) => {
-      console.log(data);
+      console.log("Logout successful:", data);
+      // Clear user from Redux
       dispatch(removeUser());
-      navigate("/auth");
+      // Clear any other state if needed
+      localStorage.clear(); // Clear any local storage if you're using it
+      sessionStorage.clear(); // Clear any session storage
+      // Navigate to auth page
+      navigate("/auth", { replace: true }); // Use replace to prevent going back
     },
     onError: (error) => {
-      console.log(error);
+      console.log("Logout error:", error);
+      // Even if logout API fails, clear local state and redirect
+      dispatch(removeUser());
+      navigate("/auth", { replace: true });
     },
   });
 
@@ -48,21 +56,24 @@ const Header = () => {
         <input
           type="text"
           placeholder="Search"
-          className="bg-[#1f1f1f] outline-none text-[#f5f5f5]"
+          className="bg-[#1f1f1f] outline-none text-[#f5f5f5] w-full"
         />
       </div>
 
       {/* LOGGED USER DETAILS */}
       <div className="flex items-center gap-4">
         {userData.role === "Admin" && (
-          <div onClick={() => navigate("/dashboard")} className="bg-[#1f1f1f] rounded-[15px] p-3 cursor-pointer">
+          <div 
+            onClick={() => navigate("/dashboard")} 
+            className="bg-[#1f1f1f] rounded-[15px] p-3 cursor-pointer hover:bg-[#2a2a2a] transition-colors duration-200"
+          >
             <MdDashboard className="text-[#f5f5f5] text-2xl" />
           </div>
         )}
-        <div className="bg-[#1f1f1f] rounded-[15px] p-3 cursor-pointer">
+        <div className="bg-[#1f1f1f] rounded-[15px] p-3 cursor-pointer hover:bg-[#2a2a2a] transition-colors duration-200">
           <FaBell className="text-[#f5f5f5] text-2xl" />
         </div>
-        <div className="flex items-center gap-3 cursor-pointer">
+        <div className="flex items-center gap-3">
           <FaUserCircle className="text-[#f5f5f5] text-4xl" />
           <div className="flex flex-col items-start">
             <h1 className="text-md text-[#f5f5f5] font-semibold tracking-wide">
@@ -72,11 +83,16 @@ const Header = () => {
               {userData.role || "Role"}
             </p>
           </div>
-          <IoLogOut
+          <button
             onClick={handleLogout}
-            className="text-[#f5f5f5] ml-2"
-            size={40}
-          />
+            disabled={logoutMutation.isPending}
+            className="ml-2 p-2 rounded-lg hover:bg-red-500 hover:bg-opacity-20 transition-colors duration-200 disabled:opacity-50"
+          >
+            <IoLogOut
+              className={`text-[#f5f5f5] ${logoutMutation.isPending ? 'animate-spin' : ''}`}
+              size={30}
+            />
+          </button>
         </div>
       </div>
     </header>
