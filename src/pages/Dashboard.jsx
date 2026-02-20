@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { MdTableBar, MdCategory, MdRestaurantMenu } from "react-icons/md";
-import { BiSolidDish } from "react-icons/bi";
+import { MdTableBar, MdCategory, MdRestaurantMenu, MdPayment } from "react-icons/md";
 import Metrics from "../components/dashboard/Metrics";
 import RecentOrders from "../components/dashboard/RecentOrders";
 import TableManagement from "../components/dashboard/TableManagement";
 import CategoryManagement from "../components/dashboard/CategoryManagement";
 import MenuManagement from "../components/dashboard/MenuManagement";
+import PaymentManagement from "../components/dashboard/PaymentManagement"; // Add this import
 
 const tabs = ["Metrics", "Orders", "Tables", "Categories", "Menu", "Payments"];
 
@@ -38,23 +38,20 @@ const Dashboard = () => {
               {tab === "Tables" && <MdTableBar className="inline mr-2" />}
               {tab === "Categories" && <MdCategory className="inline mr-2" />}
               {tab === "Menu" && <MdRestaurantMenu className="inline mr-2" />}
+              {tab === "Payments" && <MdPayment className="inline mr-2" />}
               {tab}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-6 pb-10">
         {activeTab === "Metrics" && <Metrics />}
         {activeTab === "Orders" && <RecentOrders />}
         {activeTab === "Tables" && <TableManagement />}
         {activeTab === "Categories" && <CategoryManagement />}
         {activeTab === "Menu" && <MenuManagement />}
-        {activeTab === "Payments" && (
-          <div className="text-white p-6 text-center">
-            Payment Management Coming Soon
-          </div>
-        )}
+        {activeTab === "Payments" && <PaymentManagement />} {/* Updated this line */}
       </div>
     </div>
   );
