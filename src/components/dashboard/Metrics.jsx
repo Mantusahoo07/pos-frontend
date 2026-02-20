@@ -40,6 +40,20 @@ const Metrics = () => {
     }
   };
 
+  // Get customers based on selected time range
+  const getCustomers = () => {
+    switch(timeRange) {
+      case 'today':
+        return metrics.customers.today;
+      case 'week':
+        return metrics.customers.week;
+      case 'month':
+        return metrics.customers.month;
+      default:
+        return metrics.customers.total;
+    }
+  };
+
   const metricsData = [
     { 
       title: "Revenue", 
@@ -57,7 +71,7 @@ const Metrics = () => {
     },
     { 
       title: "Total Customers", 
-      value: metrics.customers.total.toString(), 
+      value: getCustomers().toString(), 
       percentage: percentages.customers.value, 
       color: "#f6b100", 
       isIncrease: percentages.customers.isIncrease 
@@ -65,9 +79,9 @@ const Metrics = () => {
     { 
       title: "Active Orders", 
       value: metrics.orders.inProgress.toString(), 
-      percentage: "12", 
+      percentage: percentages.activeOrders.value, 
       color: "#be3e3f", 
-      isIncrease: true 
+      isIncrease: percentages.activeOrders.isIncrease 
     },
   ];
 
@@ -85,8 +99,8 @@ const Metrics = () => {
       color: "#285430" 
     },
     { 
-      title: "Active Orders", 
-      value: metrics.orders.inProgress.toString(), 
+      title: "Completed Orders", 
+      value: metrics.orders.completed.toString(), 
       percentage: "0", 
       color: "#735f32" 
     },
