@@ -51,7 +51,7 @@ const Menu = () => {
         </div>
 
         {/* Right Section - Cart & Bill (30%) */}
-        <div className="w-[30%] bg-[#1a1a1a] border-l border-[#333] flex flex-col overflow-hidden">
+        <div className="w-[30%] bg-[#1a1a1a] border-l border-[#333] flex flex-col h-full">
           {/* Customer Info - Compact */}
           <div className="p-2 border-b border-[#333] flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -70,13 +70,13 @@ const Menu = () => {
             </div>
           </div>
 
-          {/* Cart Items - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-2">
+          {/* Cart Items - Scrollable with calculated height */}
+          <div className="flex-1 overflow-y-auto min-h-0">
             <CartInfo />
           </div>
 
-          {/* Bill - Fixed at bottom with proper spacing */}
-          <div className="border-t border-[#333] p-3 bg-[#1a1a1a] flex-shrink-0">
+          {/* Bill - Fixed at bottom with padding for BottomNav */}
+          <div className="border-t border-[#333] p-3 bg-[#1a1a1a] flex-shrink-0 pb-20">
             <Bill />
           </div>
         </div>
