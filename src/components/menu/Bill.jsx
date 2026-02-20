@@ -1,8 +1,98 @@
-success",
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getTotalPrice } from "../../redux/slices/cartSlice";
+import { addOrder, updateTable } from "../../https/index";
+import { enqueueSnackbar } from "notistack";
+import { useMutation } from "@tanstack/react-query";
+import { removeAllItems } from "../../redux/slices/cartSlice";
+import { removeCustomer } from "../../redux/slices/customerSlice";
+import Invoice from "../invoice/Invoice";
+import { useNavigate } from "react-router-dom";
+import { FaMoneyBillWave, FaCreditCard } from "react-icons/fa";
+
+const Bill = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const customerData = useSelector((state) => state.customer);
+  const cartData = useSelector((state) => state.cart);
+  const total = useSelector(getTotalPrice);
+  const taxRate = 5.25;
+  const tax = (total * taxRate) / 100;
+  const totalPriceWithTax = total + tax;
+
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [orderInfo, setOrderInfo] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const paymentOptions = [
+    { id: "Cash", name: "Cash", icon: <FaMoneyBillWave />, color: "bg-green-600" },
+    { id: "Card", name: "Card", icon: <FaCreditCard />, color: "bg-blue-600" },
+  ];
+
+  const validateOrder = () => {
+    if (!paymentMethod) {
+      enqueueSnackbar("Please select a payment method!", { variant: "warning" });
+      return false;
+    }
+    if (cartData.length === 0) {
+      enqueueSnackbar("Your cart is empty!", { variant: "warning" });
+      return false;
+    }
+    if (!customerData.table?.tableId) {
+      enqueueSnackbar("Please select a table first!", { variant: "warning" });
+      navigate("/tables");
+      return false;
+    }
+    return true;
+  };
+
+  const handlePlaceOrder = () => {
+    if (!validateOrder()) return;
+    setIsProcessing(true);
+
+    const orderData = {
+      customerDetails: {
+        name: customerData.customerName || `Guest ${Math.floor(Math.random() * 1000)}`,
+        phone: customerData.customerPhone || "",
+        guests: customerData.guests || 1,
+      },
+      orderStatus: "In Progress",
+      bills: { 
+        total: Number(total.toFixed(2)), 
+        tax: Number(tax.toFixed(2)), 
+        totalWithTax: Number(totalPriceWithTax.toFixed(2)) 
+      },
+      items: cartData.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.pricePerQuantity || item.price / item.quantity,
+      })),
+      table: customerData.table.tableId,
+      paymentMethod: paymentMethod,
+    };
+    
+    orderMutation.mutate(orderData);
+  };
+
+  const orderMutation = useMutation({
+    mutationFn: addOrder,
+    onSuccess: (resData) => {
+      const orderData = resData.data.data;
+      setOrderInfo(orderData);
+      
+      // Update table status
+      tableUpdateMutation.mutate({
+        tableId: customerData.table.tableId,
+        status: "Booked",
+        orderId: orderData._id,
       });
       
       setShowInvoice(true);
       setIsProcessing(false);
+      
+      enqueueSnackbar("Order placed successfully!", { variant: "success" });
     },
     onError: (error) => {
       console.error("Order error:", error);
@@ -14,84 +104,83 @@ success",
   });
 
   const tableUpdateMutation = useMutation({
-    mutationFn: (reqData) => updateTable(reqData),
-    onSuccess: (resData) => {
-      console.log("Table updated:", resData);
+    mutationFn: updateTable,
+    onSuccess: () => {
+      // Clear cart and customer data after successful table update
+      dispatch(removeAllItems());
+      dispatch(removeCustomer());
     },
     onError: (error) => {
       console.error("Table update error:", error);
     },
   });
 
-  const handlePrintAndClose = () => {
+  const handleCloseInvoice = () => {
     setShowInvoice(false);
-    dispatch(removeAllItems());
-    dispatch(removeCustomer());
     navigate("/");
   };
 
   // If cart is empty, show empty state
   if (cartData.length === 0) {
     return (
-      <div className="px-5 py-10 text-center">
-        <p className="text-[#ababab] text-lg">Your cart is empty</p>
-        <p className="text-xs text-[#ababab] mt-2">Add items from the menu to place an order</p>
+      <div className="text-center py-4">
+        <p className="text-sm text-gray-400">Your cart is empty</p>
+        <p className="text-xs text-gray-500 mt-1">Add items from the menu</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="px-5 py-4 overflow-y-auto max-h-[calc(100vh-300px)]">
+      <div className="space-y-4">
         {/* Bill Summary */}
-        <div className="space-y-3">
-          <h3 className="text-[#f5f5f5] font-semibold text-lg">Bill Summary</h3>
+        <div className="space-y-2">
+          <h4 className="text-white text-sm font-semibold">Bill Summary</h4>
           
-          <div className="space-y-2">
+          {/* Items list - limited height with scroll if needed */}
+          <div className="max-h-24 overflow-y-auto space-y-1 pr-1 scrollbar-hide">
             {cartData.map((item, index) => (
-              <div key={index} className="flex justify-between text-sm">
-                <span className="text-[#ababab]">
+              <div key={index} className="flex justify-between text-xs">
+                <span className="text-gray-400 truncate max-w-[100px]">
                   {item.name} x{item.quantity}
                 </span>
-                <span className="text-[#f5f5f5]">₹{item.price}</span>
+                <span className="text-white">₹{item.price}</span>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-[#2a2a2a] pt-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-[#ababab]">Subtotal</p>
-              <p className="text-[#f5f5f5] font-semibold">₹{total.toFixed(2)}</p>
+          {/* Totals */}
+          <div className="border-t border-[#333] pt-2 space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">Subtotal</span>
+              <span className="text-white">₹{total.toFixed(2)}</span>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-[#ababab]">Tax (5.25%)</p>
-              <p className="text-[#f5f5f5] font-semibold">₹{tax.toFixed(2)}</p>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">Tax (5.25%)</span>
+              <span className="text-white">₹{tax.toFixed(2)}</span>
             </div>
-            
-            <div className="flex items-center justify-between pt-2 border-t border-[#2a2a2a]">
-              <p className="text-base text-[#f5f5f5] font-bold">Total</p>
-              <p className="text-xl text-[#f6b100] font-bold">₹{totalPriceWithTax.toFixed(2)}</p>
+            <div className="flex justify-between text-sm font-bold pt-1 border-t border-[#333]">
+              <span className="text-gray-300">Total</span>
+              <span className="text-[#f6b100]">₹{totalPriceWithTax.toFixed(2)}</span>
             </div>
           </div>
         </div>
 
-        {/* Payment Method Selection */}
-        <div className="mt-6">
-          <p className="text-sm text-[#ababab] font-medium mb-3">Select Payment Method</p>
-          <div className="grid grid-cols-2 gap-3">
+        {/* Payment Methods */}
+        <div>
+          <p className="text-xs text-gray-400 mb-2">Payment Method</p>
+          <div className="grid grid-cols-2 gap-2">
             {paymentOptions.map((option) => (
               <button
                 key={option.id}
                 onClick={() => setPaymentMethod(option.id)}
-                className={`flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200 ${
+                className={`py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${
                   paymentMethod === option.id
-                    ? `${option.color} text-white scale-105 shadow-lg`
-                    : "bg-[#1f1f1f] text-[#ababab] hover:bg-[#2a2a2a]"
+                    ? `${option.color} text-white`
+                    : "bg-[#262626] text-gray-400 hover:bg-[#333]"
                 }`}
               >
-                <div className="mb-2">{option.icon}</div>
-                <span className="text-sm font-semibold">{option.name}</span>
+                {option.icon} {option.name}
               </button>
             ))}
           </div>
@@ -99,369 +188,14 @@ success",
 
         {/* Table Info */}
         {customerData.table && (
-          <div className="mt-4 p-3 bg-[#1f1f1f] rounded-lg">
-            <p className="text-sm text-[#ababab]">
-              Table: <span className="text-[#f5f5f5] font-semibold">{customerData.table.tableNo}</span>
-            </p>
-            {customerData.customerName && (
-              <p className="text-sm text-[#ababab] mt-1">
-                Customer: <span className="text-[#f5f5f5]">{customerData.customerName}</span>
-              </p>
-            )}
-            <p className="text-sm text-[#ababab] mt-1">
-              Guests: <span className="text-[#f5f5f5]">{customerData.guests || 1}</span>
-            </p>
-          </div>
-        )}
-
-        {/* Place Order Button */}
-        <div className="mt-6">
-          <button
-            onClick={handlePlaceOrder}
-            disabled={isProcessing || !paymentMethod}
-            className={`w-full py-4 rounded-lg font-bold text-lg transition-all duration-200 ${
-              isProcessing || !paymentMethod
-                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                : "bg-[#f6b100] text-[#1f1f1f] hover:bg-yellow-500 hover:scale-105"
-            }`}
-          >
-            {isProcessing ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-5 h-5 border-2 border-[#1f1f1f] border-t-transparent rounded-full animate-spin"></div>
-                Processing...
-              </span>
-            ) : (
-              `Place Order • ₹${totalPriceWithTax.toFixed(2)}`
-            )}
-          </button>
-        </div>
-
-        {/* Selected Payment Method Indicator */}
-        {paymentMethod && (
-          <div className="mt-3 text-center">
-            <p className="text-xs text-[#ababab]">
-              Selected: <span className="text-[#f6b100] font-semibold">{paymentMethod}</span>
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Invoice Modal */}
-      {showInvoice && orderInfo && (
-        <Invoice 
-          orderInfo={orderInfo} 
-          setShowInvoice={handlePrintAndClose} 
-        />
-      )}
-    </>
-  );
-};
-
-export default Bill;
-import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { getTotalPrice } from "../../redux/slices/cartSlice";
-import { addOrder, updateTable } from "../../https/index";
-import { enqueueSnackbar } from "notistack";
-import { useMutation } from "@tanstack/react-query";
-import { removeAllItems } from "../../redux/slices/cartSlice";
-import { removeCustomer } from "../../redux/slices/customerSlice";
-import Invoice from "../invoice/Invoice";
-import { useNavigate } from "react-router-dom";
-import { FaMoneyBillWave, FaCreditCard } from "react-icons/fa";
-
-const Bill = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const customerData = useSelector((state) => state.customer);
-  const cartData = useSelector((state) => state.cart);
-  const total = useSelector(getTotalPrice);
-  const taxRate = 5.25;
-  const tax = (total * taxRate) / 100;
-  const totalPriceWithTax = total + tax;
-
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [orderInfo, setOrderInfo] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const paymentOptions = [
-    { id: "Cash", name: "Cash", icon: <FaMoneyBillWave />, color: "bg-green-600" },
-    { id: "Card", name: "Card", icon: <FaCreditCard />, color: "bg-blue-600" },
-  ];
-
-  const validateOrder = () => {
-    if (!paymentMethod) {
-      enqueueSnackbar("Select payment method!", { variant: "warning" });
-      return false;
-    }
-    if (cartData.length === 0) {
-      enqueueSnackbar("Cart is empty!", { variant: "warning" });
-      return false;
-    }
-    if (!customerData.table?.tableId) {
-      enqueueSnackbar("Select a table first!", { variant: "warning" });
-      navigate("/tables");
-      return false;
-    }
-    return true;
-  };
-
-  const handlePlaceOrder = () => {
-    if (!validateOrder()) return;
-    setIsProcessing(true);
-
-    const orderData = {
-      customerDetails: {
-        name: customerData.customerName || `Guest`,
-        phone: customerData.customerPhone || "",
-        guests: customerData.guests || 1,
-      },
-      orderStatus: "In Progress",
-      bills: { total, tax, totalWithTax: totalPriceWithTax },
-      items: cartData.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: item.pricePerQuantity,
-      })),
-      table: customerData.table.tableId,
-      paymentMethod: paymentMethod,
-    };
-    
-    orderMutation.mutate(orderData);
-  };
-
-  const orderMutation = useMutation({
-    mutationFn: addOrder,
-    onSuccess: (resData) => {
-      setOrderInfo(resData.data.data);
-      tableUpdateMutation.mutate({
-        tableId: customerData.table.tableId,
-        status: "Booked",
-        orderId: resData.data.data._id,
-      });
-      setShowInvoice(true);
-      setIsProcessing(false);
-    },
-    onError: () => {
-      enqueueSnackbar("Failed to place order!", { variant: "error" });
-      setIsProcessing(false);
-    },
-  });
-
-  const tableUpdateMutation = useMutation({
-    mutationFn: updateTable,
-    onSuccess: () => {
-      dispatch(removeAllItems());
-      dispatch(removeCustomer());
-    },
-  });
-
-  if (cartData.length === 0) {
-    return <p className="text-xs text-gray-500 text-center py-2">Cart empty</p>;
-  }
-
-  return (
-    <>
-      <div className="space-y-2">
-        {/* Total */}
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-400">Total:</span>
-          <span className="text-white font-bold">₹{totalPriceWithTax.toFixed(2)}</span>
-        </div>
-
-        {/* Payment Methods */}
-        <div className="flex gap-1">
-          {paymentOptions.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => setPaymentMethod(option.id)}
-              className={`flex-1 py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 ${
-                paymentMethod === option.id
-                  ? option.color + " text-white"
-                  : "bg-[#262626] text-gray-400"
-              }`}
-            >
-              {option.icon} {option.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Place Order Button */}
-        <button
-          onClick={handlePlaceOrder}
-          disabled={isProcessing || !paymentMethod}
-          className={`w-full py-2 rounded text-sm font-bold ${
-            isProcessing || !paymentMethod
-              ? "bg-gray-600 text-gray-400"
-              : "bg-[#f6b100] text-black hover:bg-yellow-500"
-          }`}
-        >
-          {isProcessing ? "..." : "Place Order"}
-        </button>
-      </div>
-
-      {showInvoice && orderInfo && (
-        <Invoice orderInfo={orderInfo} setShowInvoice={() => {
-          setShowInvoice(false);
-          navigate("/");
-        }} />
-      )}
-    </>
-  );
-};
-
-export default Bill;
-import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { getTotalPrice } from "../../redux/slices/cartSlice";
-import { addOrder, updateTable } from "../../https/index";
-import { enqueueSnackbar } from "notistack";
-import { useMutation } from "@tanstack/react-query";
-import { removeAllItems } from "../../redux/slices/cartSlice";
-import { removeCustomer } from "../../redux/slices/customerSlice";
-import Invoice from "../invoice/Invoice";
-import { useNavigate } from "react-router-dom";
-import { FaMoneyBillWave, FaCreditCard } from "react-icons/fa";
-
-const Bill = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const customerData = useSelector((state) => state.customer);
-  const cartData = useSelector((state) => state.cart);
-  const total = useSelector(getTotalPrice);
-  const taxRate = 5.25;
-  const tax = (total * taxRate) / 100;
-  const totalPriceWithTax = total + tax;
-
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [orderInfo, setOrderInfo] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const paymentOptions = [
-    { id: "Cash", name: "Cash", icon: <FaMoneyBillWave />, color: "bg-green-600" },
-    { id: "Card", name: "Card", icon: <FaCreditCard />, color: "bg-blue-600" },
-  ];
-
-  const validateOrder = () => {
-    if (!paymentMethod) {
-      enqueueSnackbar("Select payment method!", { variant: "warning" });
-      return false;
-    }
-    if (cartData.length === 0) {
-      enqueueSnackbar("Cart is empty!", { variant: "warning" });
-      return false;
-    }
-    if (!customerData.table?.tableId) {
-      enqueueSnackbar("Select a table first!", { variant: "warning" });
-      navigate("/tables");
-      return false;
-    }
-    return true;
-  };
-
-  const handlePlaceOrder = () => {
-    if (!validateOrder()) return;
-    setIsProcessing(true);
-
-    const orderData = {
-      customerDetails: {
-        name: customerData.customerName || `Guest`,
-        phone: customerData.customerPhone || "",
-        guests: customerData.guests || 1,
-      },
-      orderStatus: "In Progress",
-      bills: { total, tax, totalWithTax: totalPriceWithTax },
-      items: cartData.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: item.pricePerQuantity,
-      })),
-      table: customerData.table.tableId,
-      paymentMethod: paymentMethod,
-    };
-    
-    orderMutation.mutate(orderData);
-  };
-
-  const orderMutation = useMutation({
-    mutationFn: addOrder,
-    onSuccess: (resData) => {
-      setOrderInfo(resData.data.data);
-      tableUpdateMutation.mutate({
-        tableId: customerData.table.tableId,
-        status: "Booked",
-        orderId: resData.data.data._id,
-      });
-      setShowInvoice(true);
-      setIsProcessing(false);
-    },
-    onError: () => {
-      enqueueSnackbar("Failed to place order!", { variant: "error" });
-      setIsProcessing(false);
-    },
-  });
-
-  const tableUpdateMutation = useMutation({
-    mutationFn: updateTable,
-    onSuccess: () => {
-      dispatch(removeAllItems());
-      dispatch(removeCustomer());
-    },
-  });
-
-  if (cartData.length === 0) {
-    return (
-      <div className="text-center py-4">
-        <p className="text-xs text-gray-500">Cart is empty</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="space-y-3">
-        {/* Bill Summary */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-400">Items ({cartData.length})</span>
-            <span className="text-white">₹{total.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-400">Tax (5.25%)</span>
-            <span className="text-white">₹{tax.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-sm font-bold pt-1 border-t border-[#333]">
-            <span className="text-gray-300">Total</span>
-            <span className="text-[#f6b100]">₹{totalPriceWithTax.toFixed(2)}</span>
-          </div>
-        </div>
-
-        {/* Payment Methods */}
-        <div className="grid grid-cols-2 gap-2">
-          {paymentOptions.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => setPaymentMethod(option.id)}
-              className={`py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${
-                paymentMethod === option.id
-                  ? `${option.color} text-white`
-                  : "bg-[#262626] text-gray-400 hover:bg-[#333]"
-              }`}
-            >
-              {option.icon} {option.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Table Info */}
-        {customerData.table && (
           <div className="bg-[#262626] rounded-lg p-2">
-            <p className="text-[10px] text-gray-400">
-              Table <span className="text-white font-medium">{customerData.table.tableNo}</span>
+            <p className="text-xs text-gray-400">
+              Table: <span className="text-white font-medium">{customerData.table.tableNo}</span>
+              {customerData.customerName && (
+                <span className="ml-2 text-gray-400">
+                  | Guest: <span className="text-white">{customerData.customerName}</span>
+                </span>
+              )}
             </p>
           </div>
         )}
@@ -489,14 +223,8 @@ const Bill = () => {
 
       {/* Invoice Modal */}
       {showInvoice && orderInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <Invoice 
-            orderInfo={orderInfo} 
-            setShowInvoice={() => {
-              setShowInvoice(false);
-              navigate("/");
-            }} 
-          />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <Invoice orderInfo={orderInfo} setShowInvoice={handleCloseInvoice} />
         </div>
       )}
     </>
