@@ -13,33 +13,26 @@ const Orders = () => {
     document.title = "POS | Orders";
   }, []);
 
-  // Fetch orders from backend
-  const { 
-    data: orders, 
-    isLoading, 
-    isError, 
-    error 
-  } = useQuery({
+  const { data: resData, isLoading, isError, error } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
       const response = await getOrders();
-      return response.data.data; // Return the actual data array
+      return response;
     },
     placeholderData: keepPreviousData
   });
 
-  // Show error message if fetch fails
-  useEffect(() => {
-    if (isError) {
-      enqueueSnackbar(error?.response?.data?.message || "Failed to fetch orders!", { 
-        variant: "error" 
-      });
-      console.error("Orders fetch error:", error);
-    }
-  }, [isError, error]);
+  if (isError) {
+    enqueueSnackbar(error?.response?.data?.message || "Something went wrong!", { 
+      variant: "error" 
+    });
+  }
+
+  // Safely access the orders array
+  const orders = resData?.data?.data || [];
 
   // Filter orders based on status
-  const filteredOrders = orders?.filter(order => {
+  const filteredOrders = orders.filter(order => {
     if (status === "all") return true;
     if (status === "progress") return order.orderStatus === "In Progress";
     if (status === "ready") return order.orderStatus === "Ready";
@@ -49,31 +42,11 @@ const Orders = () => {
 
   // Get counts for each status
   const counts = {
-    all: orders?.length || 0,
-    progress: orders?.filter(o => o.orderStatus === "In Progress").length || 0,
-    ready: orders?.filter(o => o.orderStatus === "Ready").length || 0,
-    completed: orders?.filter(o => o.orderStatus === "Completed").length || 0
+    all: orders.length,
+    progress: orders.filter(o => o.orderStatus === "In Progress").length,
+    ready: orders.filter(o => o.orderStatus === "Ready").length,
+    completed: orders.filter(o => o.orderStatus === "Completed").length
   };
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden pb-24">
-        <div className="flex items-center justify-between px-10 py-4">
-          <div className="flex items-center gap-4">
-            <BackButton />
-            <h1 className="text-[#f5f5f5] text-2xl font-bold tracking-wider">
-              Orders
-            </h1>
-          </div>
-        </div>
-        <div className="flex justify-center items-center h-[500px]">
-          <div className="spinner"></div>
-        </div>
-        <BottomNav />
-      </section>
-    );
-  }
 
   return (
     <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden pb-24">
@@ -129,7 +102,11 @@ const Orders = () => {
       </div>
 
       <div className="grid grid-cols-3 gap-3 px-16 py-4 overflow-y-scroll scrollbar-hide">
-        {filteredOrders?.length > 0 ? (
+        {isLoading ? (
+          <div className="col-span-3 flex justify-center items-center h-64">
+            <div className="spinner"></div>
+          </div>
+        ) : filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
             <OrderCard key={order._id} order={order} />
           ))
