@@ -30,6 +30,7 @@ export const createOrderRazorpay = (data) =>
   axiosWrapper.post("/api/payment/create-order", data);
 export const verifyPaymentRazorpay = (data) =>
   axiosWrapper.post("/api/payment//verify-payment", data);
+export const getPayments = () => axiosWrapper.get("/api/payment");
 
 // Order Endpoints
 export const addOrder = (data) => axiosWrapper.post("/api/order/", data);
