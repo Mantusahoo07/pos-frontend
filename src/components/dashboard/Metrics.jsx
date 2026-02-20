@@ -85,32 +85,33 @@ const Metrics = () => {
     },
   ];
 
-  const itemsData = [
-    { 
-      title: "Total Categories", 
-      value: metrics.items.totalCategories.toString(), 
-      percentage: "0", 
-      color: "#5b45b0" 
-    },
-    { 
-      title: "Total Dishes", 
-      value: metrics.items.totalDishes.toString(), 
-      percentage: "0", 
-      color: "#285430" 
-    },
-    { 
-      title: "Completed Orders", 
-      value: metrics.orders.completed.toString(), 
-      percentage: "0", 
-      color: "#735f32" 
-    },
-    { 
-      title: "Total Tables", 
-      value: metrics.tables.total.toString(), 
-      color: "#7f167f",
-      subtext: `${metrics.tables.available} Available, ${metrics.tables.booked} Booked`
-    },
-  ];
+  // Find this section in the itemsData array (around line 100-110)
+const itemsData = [
+  { 
+    title: "Total Categories", 
+    value: metrics.items.totalCategories.toString(), // This will now show real data or 0
+    percentage: "0", 
+    color: "#5b45b0" 
+  },
+  { 
+    title: "Total Dishes", 
+    value: metrics.items.totalDishes.toString(), // This will now show real data or 0
+    percentage: "0", 
+    color: "#285430" 
+  },
+  { 
+    title: "Completed Orders", 
+    value: metrics.orders.completed.toString(), 
+    percentage: "0", 
+    color: "#735f32" 
+  },
+  { 
+    title: "Total Tables", 
+    value: metrics.tables.total.toString(), 
+    color: "#7f167f",
+    subtext: `${metrics.tables.available} Available, ${metrics.tables.booked} Booked`
+  },
+];
 
   return (
     <div className="container mx-auto py-2 px-6 md:px-4">
