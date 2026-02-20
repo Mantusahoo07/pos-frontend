@@ -21,7 +21,7 @@ const Menu = () => {
   if (isLoading) return <FullScreenLoader />;
 
   return (
-    <div className="bg-[#1f1f1f] h-screen flex flex-col overflow-hidden">
+    <div className="bg-[#1f1f1f] h-screen flex flex-col overflow-hidden pb-16">
       {/* Header */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1a1a1a] border-b border-[#333] flex-shrink-0">
         <div className="flex items-center gap-2">
