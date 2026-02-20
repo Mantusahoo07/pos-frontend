@@ -23,48 +23,50 @@ const CartInfo = () => {
   };
 
   return (
-    <div className="px-4 py-3">
-      <h1 className="text-lg text-[#e4e4e4] font-semibold tracking-wide mb-3">
-        Order Details ({cartData.length} items)
+    <div className="h-full flex flex-col">
+      <h1 className="text-white text-sm font-semibold px-2 py-2 sticky top-0 bg-[#1a1a1a] z-10">
+        Order Details ({cartData.length})
       </h1>
+      
       <div 
-        className="overflow-y-auto scrollbar-hide" 
+        className="flex-1 overflow-y-auto px-2 scrollbar-hide" 
         ref={scrollRef}
-        style={{ maxHeight: "300px" }}
       >
         {cartData.length === 0 ? (
-          <p className="text-[#ababab] text-sm text-center py-10">
-            Your cart is empty. Start adding items!
+          <p className="text-gray-500 text-xs text-center py-4">
+            Your cart is empty
           </p>
         ) : (
-          cartData.map((item) => (
-            <div key={item.id} className="bg-[#1f1f1f] rounded-lg px-4 py-3 mb-2">
-              <div className="flex items-center justify-between">
-                <h1 className="text-[#ababab] font-semibold text-base">
-                  {item.name}
-                </h1>
-                <p className="text-[#f6b100] font-semibold">
-                  x{item.quantity}
-                </p>
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-3">
-                  <RiDeleteBin2Fill
-                    onClick={() => handleRemove(item.id)}
-                    className="text-red-500 cursor-pointer hover:text-red-400"
-                    size={18}
-                  />
-                  <FaNotesMedical
-                    className="text-blue-500 cursor-pointer hover:text-blue-400"
-                    size={18}
-                  />
+          <div className="space-y-2 pb-2">
+            {cartData.map((item) => (
+              <div key={item.id} className="bg-[#262626] rounded-lg p-2">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-white text-xs font-medium truncate max-w-[100px]">
+                    {item.name}
+                  </h1>
+                  <p className="text-[#f6b100] text-xs font-semibold">
+                    x{item.quantity}
+                  </p>
                 </div>
-                <p className="text-[#f5f5f5] font-bold">
-                  ₹{item.price}
-                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-center gap-2">
+                    <RiDeleteBin2Fill
+                      onClick={() => handleRemove(item.id)}
+                      className="text-red-500 cursor-pointer hover:text-red-400"
+                      size={14}
+                    />
+                    <FaNotesMedical
+                      className="text-blue-500 cursor-pointer hover:text-blue-400"
+                      size={14}
+                    />
+                  </div>
+                  <p className="text-white text-xs font-bold">
+                    ₹{item.price}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>
