@@ -1,92 +1,4 @@
-import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { getTotalPrice } from "../../redux/slices/cartSlice";
-import {
-  addOrder,
-  createOrderRazorpay,
-  updateTable,
-  verifyPaymentRazorpay,
-} from "../../https/index";
-import { enqueueSnackbar } from "notistack";
-import { useMutation } from "@tanstack/react-query";
-import { removeAllItems } from "../../redux/slices/cartSlice";
-import { removeCustomer } from "../../redux/slices/customerSlice";
-import Invoice from "../invoice/Invoice";
-import { useNavigate } from "react-router-dom";
-import { FaMoneyBillWave, FaCreditCard, FaGooglePay, FaPhone } from "react-icons/fa";
-
-function loadScript(src) {
-  return new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => {
-      resolve(true);
-    };
-    script.onerror = () => {
-      resolve(false);
-    };
-    document.body.appendChild(script);
-  });
-}
-
-const Bill = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const customerData = useSelector((state) => state.customer);
-  const cartData = useSelector((state) => state.cart);
-  const total = useSelector(getTotalPrice);
-  const taxRate = 5.25;
-  const tax = (total * taxRate) / 100;
-  const totalPriceWithTax = total + tax;
-
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [orderInfo, setOrderInfo] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Payment options
-  const paymentOptions = [
-    { id: "Cash", name: "Cash", icon: <FaMoneyBillWave size={24} />, color: "bg-green-600" },
-    { id: "Card", name: "Card", icon: <FaCreditCard size={24} />, color: "bg-blue-600" },
-    { id: "UPI", name: "UPI", icon: <FaGooglePay size={24} />, color: "bg-purple-600" },
-    { id: "Online", name: "Online", icon: <FaPhone size={24} />, color: "bg-yellow-600" },
-  ];
-
-  // Validate before placing order
-  const validateOrder = () => {
-    if (!paymentMethod) {
-      enqueueSnackbar("Please select a payment method!", {
-        variant: "warning",
-      });
-      return false;
-    }
-
-    if (cartData.length === 0) {
-      enqueueSnackbar("Your cart is empty! Please add items.", {
-        variant: "warning",
-      });
-      return false;
-    }
-
-    if (!customerData.table?.tableId) {
-      enqueueSnackbar("Please select a table first!", {
-        variant: "warning",
-      });
-      navigate("/tables");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handlePlaceOrder = async () => {
-    if (!validateOrder()) return;
-
-    setIsProcessing(true);
-
-    if (paymentMethod === "Online" || paymentMethod === "Card" || paymentMethod === "UPI") {
-      await handleOnlinePayment();
+   await handleOnlinePayment();
     } else {
       // Cash payment - direct order
       const orderData = {
@@ -383,6 +295,161 @@ const Bill = () => {
           orderInfo={orderInfo} 
           setShowInvoice={handlePrintAndClose} 
         />
+      )}
+    </>
+  );
+};
+
+export default Bill;
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getTotalPrice } from "../../redux/slices/cartSlice";
+import { addOrder, updateTable } from "../../https/index";
+import { enqueueSnackbar } from "notistack";
+import { useMutation } from "@tanstack/react-query";
+import { removeAllItems } from "../../redux/slices/cartSlice";
+import { removeCustomer } from "../../redux/slices/customerSlice";
+import Invoice from "../invoice/Invoice";
+import { useNavigate } from "react-router-dom";
+import { FaMoneyBillWave, FaCreditCard } from "react-icons/fa";
+
+const Bill = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const customerData = useSelector((state) => state.customer);
+  const cartData = useSelector((state) => state.cart);
+  const total = useSelector(getTotalPrice);
+  const taxRate = 5.25;
+  const tax = (total * taxRate) / 100;
+  const totalPriceWithTax = total + tax;
+
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [orderInfo, setOrderInfo] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const paymentOptions = [
+    { id: "Cash", name: "Cash", icon: <FaMoneyBillWave />, color: "bg-green-600" },
+    { id: "Card", name: "Card", icon: <FaCreditCard />, color: "bg-blue-600" },
+  ];
+
+  const validateOrder = () => {
+    if (!paymentMethod) {
+      enqueueSnackbar("Select payment method!", { variant: "warning" });
+      return false;
+    }
+    if (cartData.length === 0) {
+      enqueueSnackbar("Cart is empty!", { variant: "warning" });
+      return false;
+    }
+    if (!customerData.table?.tableId) {
+      enqueueSnackbar("Select a table first!", { variant: "warning" });
+      navigate("/tables");
+      return false;
+    }
+    return true;
+  };
+
+  const handlePlaceOrder = () => {
+    if (!validateOrder()) return;
+    setIsProcessing(true);
+
+    const orderData = {
+      customerDetails: {
+        name: customerData.customerName || `Guest`,
+        phone: customerData.customerPhone || "",
+        guests: customerData.guests || 1,
+      },
+      orderStatus: "In Progress",
+      bills: { total, tax, totalWithTax: totalPriceWithTax },
+      items: cartData.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.pricePerQuantity,
+      })),
+      table: customerData.table.tableId,
+      paymentMethod: paymentMethod,
+    };
+    
+    orderMutation.mutate(orderData);
+  };
+
+  const orderMutation = useMutation({
+    mutationFn: addOrder,
+    onSuccess: (resData) => {
+      setOrderInfo(resData.data.data);
+      tableUpdateMutation.mutate({
+        tableId: customerData.table.tableId,
+        status: "Booked",
+        orderId: resData.data.data._id,
+      });
+      setShowInvoice(true);
+      setIsProcessing(false);
+    },
+    onError: () => {
+      enqueueSnackbar("Failed to place order!", { variant: "error" });
+      setIsProcessing(false);
+    },
+  });
+
+  const tableUpdateMutation = useMutation({
+    mutationFn: updateTable,
+    onSuccess: () => {
+      dispatch(removeAllItems());
+      dispatch(removeCustomer());
+    },
+  });
+
+  if (cartData.length === 0) {
+    return <p className="text-xs text-gray-500 text-center py-2">Cart empty</p>;
+  }
+
+  return (
+    <>
+      <div className="space-y-2">
+        {/* Total */}
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-gray-400">Total:</span>
+          <span className="text-white font-bold">₹{totalPriceWithTax.toFixed(2)}</span>
+        </div>
+
+        {/* Payment Methods */}
+        <div className="flex gap-1">
+          {paymentOptions.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => setPaymentMethod(option.id)}
+              className={`flex-1 py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1 ${
+                paymentMethod === option.id
+                  ? option.color + " text-white"
+                  : "bg-[#262626] text-gray-400"
+              }`}
+            >
+              {option.icon} {option.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Place Order Button */}
+        <button
+          onClick={handlePlaceOrder}
+          disabled={isProcessing || !paymentMethod}
+          className={`w-full py-2 rounded text-sm font-bold ${
+            isProcessing || !paymentMethod
+              ? "bg-gray-600 text-gray-400"
+              : "bg-[#f6b100] text-black hover:bg-yellow-500"
+          }`}
+        >
+          {isProcessing ? "..." : "Place Order"}
+        </button>
+      </div>
+
+      {showInvoice && orderInfo && (
+        <Invoice orderInfo={orderInfo} setShowInvoice={() => {
+          setShowInvoice(false);
+          navigate("/");
+        }} />
       )}
     </>
   );
