@@ -21,7 +21,7 @@ const Menu = () => {
   if (isLoading) return <FullScreenLoader />;
 
   return (
-    <div className="bg-[#1f1f1f] h-screen flex flex-col overflow-hidden pb-16">
+    <div className="bg-[#1f1f1f] h-screen flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1a1a1a] border-b border-[#333] flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -43,8 +43,8 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* Main Content - Flex Row with bottom padding for BottomNav */}
-      <div className="flex flex-1 overflow-hidden pb-16"> {/* Added pb-16 for BottomNav */}
+      {/* Main Content - Flex Row */}
+      <div className="flex flex-1 overflow-hidden">
         {/* Left Section - Menu Items (70%) */}
         <div className="w-[70%] overflow-y-auto">
           <MenuContainer />
