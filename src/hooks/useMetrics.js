@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { getOrders, getTables } from '../https';
+import { getOrders, getTables, getCategories, getMenuItems } from '../https';
 import { QUERY_KEYS } from '../utils/cacheKeys';
 
 export const useDashboardMetrics = () => {
-  // Fetch orders for revenue and order metrics
+  // Fetch orders
   const { 
     data: ordersData, 
     isLoading: ordersLoading,
@@ -12,11 +12,11 @@ export const useDashboardMetrics = () => {
     queryKey: [QUERY_KEYS.ORDERS, 'metrics'],
     queryFn: async () => {
       const response = await getOrders();
-      return response.data.data;
+      return response.data.data || [];
     },
   });
 
-  // Fetch tables for table metrics
+  // Fetch tables
   const { 
     data: tablesData, 
     isLoading: tablesLoading,
@@ -25,7 +25,43 @@ export const useDashboardMetrics = () => {
     queryKey: [QUERY_KEYS.TABLES, 'metrics'],
     queryFn: async () => {
       const response = await getTables();
-      return response.data.data;
+      return response.data.data || [];
+    },
+  });
+
+  // Fetch categories
+  const {
+    data: categoriesData,
+    isLoading: categoriesLoading,
+    error: categoriesError
+  } = useQuery({
+    queryKey: ['categories', 'metrics'],
+    queryFn: async () => {
+      try {
+        const response = await getCategories();
+        return response.data.data || [];
+      } catch (error) {
+        console.log("Categories not available yet:", error);
+        return [];
+      }
+    },
+  });
+
+  // Fetch menu items
+  const {
+    data: menuItemsData,
+    isLoading: menuItemsLoading,
+    error: menuItemsError
+  } = useQuery({
+    queryKey: ['menu-items', 'metrics'],
+    queryFn: async () => {
+      try {
+        const response = await getMenuItems();
+        return response.data.data || [];
+      } catch (error) {
+        console.log("Menu items not available yet:", error);
+        return [];
+      }
     },
   });
 
@@ -33,10 +69,10 @@ export const useDashboardMetrics = () => {
   const metrics = {
     // Revenue metrics
     revenue: {
-      today: calculateTodayRevenue(ordersData),
-      week: calculateWeekRevenue(ordersData),
-      month: calculateMonthRevenue(ordersData),
-      total: calculateTotalRevenue(ordersData),
+      today: calculateTodayRevenue(ordersData || []),
+      week: calculateWeekRevenue(ordersData || []),
+      month: calculateMonthRevenue(ordersData || []),
+      total: calculateTotalRevenue(ordersData || []),
     },
     
     // Order metrics
@@ -49,10 +85,10 @@ export const useDashboardMetrics = () => {
     
     // Customer metrics
     customers: {
-      total: calculateUniqueCustomers(ordersData),
-      today: calculateTodayCustomers(ordersData),
-      week: calculateWeekCustomers(ordersData),
-      month: calculateMonthCustomers(ordersData),
+      total: calculateUniqueCustomers(ordersData || []),
+      today: calculateTodayCustomers(ordersData || []),
+      week: calculateWeekCustomers(ordersData || []),
+      month: calculateMonthCustomers(ordersData || []),
     },
     
     // Table metrics
@@ -62,32 +98,32 @@ export const useDashboardMetrics = () => {
       available: tablesData?.filter(t => t.status === 'Available').length || 0,
     },
     
-    // Item metrics (you'll need an items endpoint for this)
+    // Item metrics - NOW FROM ACTUAL DATA
     items: {
-      totalCategories: 8, // You can fetch this from a categories endpoint
-      totalDishes: 50,    // You can fetch this from a menu endpoint
+      totalCategories: categoriesData?.length || 0,
+      totalDishes: menuItemsData?.length || 0,
     }
   };
 
-  // Calculate REAL percentage changes (compare current period with previous period)
+  // Calculate REAL percentage changes
   const percentages = {
-    revenue: calculateRevenuePercentage(ordersData),
-    orders: calculateOrdersPercentage(ordersData),
-    customers: calculateCustomersPercentage(ordersData),
-    activeOrders: calculateActiveOrdersPercentage(ordersData),
+    revenue: calculateRevenuePercentage(ordersData || []),
+    orders: calculateOrdersPercentage(ordersData || []),
+    customers: calculateCustomersPercentage(ordersData || []),
+    activeOrders: calculateActiveOrdersPercentage(ordersData || []),
   };
 
   return {
     metrics,
     percentages,
-    isLoading: ordersLoading || tablesLoading,
-    error: ordersError || tablesError,
+    isLoading: ordersLoading || tablesLoading || categoriesLoading || menuItemsLoading,
+    error: ordersError || tablesError || categoriesError || menuItemsError,
   };
 };
 
 // Helper functions for calculations
 const calculateTodayRevenue = (orders) => {
-  if (!orders) return 0;
+  if (!orders || orders.length === 0) return 0;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -102,7 +138,7 @@ const calculateTodayRevenue = (orders) => {
 };
 
 const calculateWeekRevenue = (orders) => {
-  if (!orders) return 0;
+  if (!orders || orders.length === 0) return 0;
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   return orders
@@ -111,7 +147,7 @@ const calculateWeekRevenue = (orders) => {
 };
 
 const calculateMonthRevenue = (orders) => {
-  if (!orders) return 0;
+  if (!orders || orders.length === 0) return 0;
   const monthAgo = new Date();
   monthAgo.setMonth(monthAgo.getMonth() - 1);
   return orders
@@ -120,18 +156,18 @@ const calculateMonthRevenue = (orders) => {
 };
 
 const calculateTotalRevenue = (orders) => {
-  if (!orders) return 0;
+  if (!orders || orders.length === 0) return 0;
   return orders.reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
 };
 
 const calculateUniqueCustomers = (orders) => {
-  if (!orders) return 0;
+  if (!orders || orders.length === 0) return 0;
   const uniquePhones = new Set(orders.map(o => o.customerDetails?.phone).filter(Boolean));
   return uniquePhones.size;
 };
 
 const calculateTodayCustomers = (orders) => {
-  if (!orders) return 0;
+  if (!orders || orders.length === 0) return 0;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -147,7 +183,7 @@ const calculateTodayCustomers = (orders) => {
 };
 
 const calculateWeekCustomers = (orders) => {
-  if (!orders) return 0;
+  if (!orders || orders.length === 0) return 0;
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   
@@ -157,7 +193,7 @@ const calculateWeekCustomers = (orders) => {
 };
 
 const calculateMonthCustomers = (orders) => {
-  if (!orders) return 0;
+  if (!orders || orders.length === 0) return 0;
   const monthAgo = new Date();
   monthAgo.setMonth(monthAgo.getMonth() - 1);
   
@@ -166,17 +202,13 @@ const calculateMonthCustomers = (orders) => {
   return uniquePhones.size;
 };
 
-// Calculate revenue percentage change (this week vs last week)
+// Calculate revenue percentage change
 const calculateRevenuePercentage = (orders) => {
   if (!orders || orders.length === 0) return { value: 0, isIncrease: true };
   
   const now = new Date();
-  
-  // This week (last 7 days)
   const weekAgo = new Date(now);
   weekAgo.setDate(weekAgo.getDate() - 7);
-  
-  // Last week (7-14 days ago)
   const twoWeeksAgo = new Date(now);
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
   
