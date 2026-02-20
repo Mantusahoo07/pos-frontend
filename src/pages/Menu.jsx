@@ -21,45 +21,69 @@ const Menu = () => {
   if (isLoading) return <FullScreenLoader />;
 
   return (
-    <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden flex gap-3 pb-24">
-      {/* Left Div */}
-      <div className="flex-[3]">
-        <div className="flex items-center justify-between px-10 py-4">
-          <div className="flex items-center gap-4">
-            <BackButton />
-            <h1 className="text-[#f5f5f5] text-2xl font-bold tracking-wider">
-              Menu
-            </h1>
-          </div>
-          <div className="flex items-center justify-around gap-4">
-            <div className="flex items-center gap-3 cursor-pointer">
-              <MdRestaurantMenu className="text-[#f5f5f5] text-4xl" />
-              <div className="flex flex-col items-start">
-                <h1 className="text-md text-[#f5f5f5] font-semibold tracking-wide">
-                  {customerData.customerName || "Customer"}
-                </h1>
-                <p className="text-xs text-[#ababab] font-medium">
-                  Table : {customerData.table?.tableNo || "N/A"}
-                </p>
-              </div>
+    <div className="bg-[#1f1f1f] h-screen flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1a1a1a] border-b border-[#333]">
+        <div className="flex items-center gap-2">
+          <BackButton />
+          <h1 className="text-white text-lg sm:text-xl font-bold">Menu</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-[#262626] px-3 py-1.5 rounded-lg">
+            <MdRestaurantMenu className="text-[#f6b100] text-xl" />
+            <div className="hidden sm:block">
+              <p className="text-white text-sm font-medium">
+                {customerData.customerName || "Guest"}
+              </p>
+              <p className="text-[#ababab] text-xs">
+                Table: {customerData.table?.tableNo || "Not selected"}
+              </p>
             </div>
           </div>
         </div>
-
-        <MenuContainer />
       </div>
-      
-      {/* Right Div - Cart */}
-      <div className="flex-[1] bg-[#1a1a1a] mt-4 mr-3 h-[780px] rounded-lg pt-2">
-        <CustomerInfo />
-        <hr className="border-[#2a2a2a] border-t-2" />
-        <CartInfo />
-        <hr className="border-[#2a2a2a] border-t-2" />
-        <Bill />
+
+      {/* Main Content - Flex Row */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Section - Menu Items (70%) */}
+        <div className="w-[70%] overflow-y-auto">
+          <MenuContainer />
+        </div>
+
+        {/* Right Section - Cart & Bill (30%) */}
+        <div className="w-[30%] bg-[#1a1a1a] border-l border-[#333] flex flex-col overflow-hidden">
+          {/* Customer Info - Compact */}
+          <div className="p-2 border-b border-[#333]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white text-xs font-semibold">
+                  {customerData.customerName || "Guest"}
+                </p>
+                <p className="text-[#ababab] text-[10px]">
+                  Table: {customerData.table?.tableNo || "N/A"} | 
+                  Guests: {customerData.guests || 1}
+                </p>
+              </div>
+              <div className="bg-[#f6b100] w-8 h-8 rounded-full flex items-center justify-center text-black font-bold text-sm">
+                {(customerData.customerName || "G").charAt(0)}
+              </div>
+            </div>
+          </div>
+
+          {/* Cart Items - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-2">
+            <CartInfo />
+          </div>
+
+          {/* Bill - Fixed at bottom */}
+          <div className="border-t border-[#333] p-2">
+            <Bill />
+          </div>
+        </div>
       </div>
 
       <BottomNav />
-    </section>
+    </div>
   );
 };
 
