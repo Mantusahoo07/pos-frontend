@@ -20,6 +20,8 @@ export const deleteCategory = (id) => axiosWrapper.delete(`/api/category/${id}`)
 
 // Menu Item Endpoints (if you have them)
 export const getMenuItems = () => axiosWrapper.get("/api/menu-item");
+export const getMenuItemsByCategory = (categoryId) => 
+  axiosWrapper.get(`/api/menu-item/category/${categoryId}`);
 export const addMenuItem = (data) => axiosWrapper.post("/api/menu-item", data);
 export const updateMenuItem = (id, data) => axiosWrapper.put(`/api/menu-item/${id}`, data);
 export const deleteMenuItem = (id) => axiosWrapper.delete(`/api/menu-item/${id}`);
