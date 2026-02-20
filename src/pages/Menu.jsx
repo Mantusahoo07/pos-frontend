@@ -23,7 +23,7 @@ const Menu = () => {
   return (
     <div className="bg-[#1f1f1f] h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1a1a1a] border-b border-[#333]">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1a1a1a] border-b border-[#333] flex-shrink-0">
         <div className="flex items-center gap-2">
           <BackButton />
           <h1 className="text-white text-lg sm:text-xl font-bold">Menu</h1>
@@ -43,8 +43,8 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* Main Content - Flex Row */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Main Content - Flex Row with bottom padding for BottomNav */}
+      <div className="flex flex-1 overflow-hidden pb-16"> {/* Added pb-16 for BottomNav */}
         {/* Left Section - Menu Items (70%) */}
         <div className="w-[70%] overflow-y-auto">
           <MenuContainer />
@@ -53,7 +53,7 @@ const Menu = () => {
         {/* Right Section - Cart & Bill (30%) */}
         <div className="w-[30%] bg-[#1a1a1a] border-l border-[#333] flex flex-col overflow-hidden">
           {/* Customer Info - Compact */}
-          <div className="p-2 border-b border-[#333]">
+          <div className="p-2 border-b border-[#333] flex-shrink-0">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-white text-xs font-semibold">
@@ -75,8 +75,8 @@ const Menu = () => {
             <CartInfo />
           </div>
 
-          {/* Bill - Fixed at bottom */}
-          <div className="border-t border-[#333] p-2">
+          {/* Bill - Fixed at bottom with proper spacing */}
+          <div className="border-t border-[#333] p-3 bg-[#1a1a1a] flex-shrink-0">
             <Bill />
           </div>
         </div>
