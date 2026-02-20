@@ -6,10 +6,11 @@ import { enqueueSnackbar } from "notistack";
 import { getOrders } from "../../https/index";
 
 const RecentOrders = () => {
-  const { data: resData, isError } = useQuery({
-    queryKey: ["orders"],
+  const { data: resData, isLoading, isError } = useQuery({
+    queryKey: ["recent-orders"],
     queryFn: async () => {
-      return await getOrders();
+      const response = await getOrders();
+      return response;
     },
     placeholderData: keepPreviousData,
   });
@@ -18,6 +19,9 @@ const RecentOrders = () => {
     enqueueSnackbar("Something went wrong!", { variant: "error" });
   }
 
+  // Safely access the orders array
+  const orders = resData?.data?.data || [];
+
   return (
     <div className="px-8 mt-6">
       <div className="bg-[#1a1a1a] w-full h-[450px] rounded-lg">
@@ -25,7 +29,7 @@ const RecentOrders = () => {
           <h1 className="text-[#f5f5f5] text-lg font-semibold tracking-wide">
             Recent Orders
           </h1>
-          <a href="" className="text-[#025cca] text-sm font-semibold">
+          <a href="/orders" className="text-[#025cca] text-sm font-semibold">
             View all
           </a>
         </div>
@@ -35,18 +39,22 @@ const RecentOrders = () => {
           <input
             type="text"
             placeholder="Search recent orders"
-            className="bg-[#1f1f1f] outline-none text-[#f5f5f5]"
+            className="bg-[#1f1f1f] outline-none text-[#f5f5f5] w-full"
           />
         </div>
 
         {/* Order list */}
         <div className="mt-4 px-6 overflow-y-scroll h-[300px] scrollbar-hide">
-          {resData?.data.data.length > 0 ? (
-            resData.data.data.map((order) => {
-              return <OrderList key={order._id} order={order} />;
-            })
+          {isLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="spinner"></div>
+            </div>
+          ) : orders.length > 0 ? (
+            orders.slice(0, 5).map((order) => ( // Show only 5 recent orders
+              <OrderList key={order._id} order={order} />
+            ))
           ) : (
-            <p className="col-span-3 text-gray-500">No orders available</p>
+            <p className="text-center text-gray-500 mt-20">No orders available</p>
           )}
         </div>
       </div>
