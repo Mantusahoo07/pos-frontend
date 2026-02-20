@@ -32,7 +32,7 @@ const Tables = () => {
   });
 
   return (
-    <section className="bg-[#1f1f1f] min-h-screen pb-24">
+    <section className="bg-[#1f1f1f] min-h-screen pb-16">
       <div className="sticky top-0 bg-[#1f1f1f] z-10 px-4 sm:px-10 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
