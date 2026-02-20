@@ -13,7 +13,6 @@ const MenuContainer = () => {
   const [itemCounts, setItemCounts] = useState({});
   const dispatch = useDispatch();
 
-  // Set first category as selected when menus load
   useEffect(() => {
     if (menus.length > 0 && !selected) {
       setSelected(menus[0]);
@@ -55,149 +54,106 @@ const MenuContainer = () => {
     };
 
     dispatch(addItems(newObj));
-    enqueueSnackbar(`${item.name} added to cart!`, { variant: "success" });
-    
-    // Reset count for this item
-    setItemCounts(prev => ({
-      ...prev,
-      [item._id]: 0
-    }));
+    enqueueSnackbar(`${item.name} added!`, { variant: "success" });
+    setItemCounts(prev => ({ ...prev, [item._id]: 0 }));
   };
 
   if (isLoading) return <FullScreenLoader />;
-  
-  if (error) {
-    return (
-      <div className="text-center text-red-500 p-10">
-        Error loading menu: {error.message}
-      </div>
-    );
-  }
-
-  if (menus.length === 0) {
-    return (
-      <div className="text-center text-[#ababab] p-10">
-        <p className="text-xl mb-4">No menu items available</p>
-        <p className="text-sm">Please add categories and menu items in the admin dashboard</p>
-      </div>
-    );
-  }
+  if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>;
+  if (menus.length === 0) return <div className="p-4 text-gray-500">No menu items</div>;
 
   return (
-    <div className="h-full overflow-y-auto">
-      {/* Categories */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 px-4 sm:px-6 lg:px-10 py-4">
+    <div className="h-full">
+      {/* Categories - Horizontal Scroll on Mobile */}
+      <div className="flex overflow-x-auto gap-2 p-3 scrollbar-hide">
         {menus.map((menu) => {
-          const isSelected = selected?._id === menu._id || selected?.id === menu.id;
-          
+          const isSelected = selected?._id === menu._id;
           return (
-            <div
-              key={menu._id || menu.id}
-              className="flex flex-col items-start justify-between p-3 sm:p-4 rounded-lg h-20 sm:h-24 cursor-pointer transition-all duration-200 hover:opacity-90"
-              style={{ backgroundColor: menu.bgColor }}
+            <button
+              key={menu._id}
               onClick={() => {
                 setSelected(menu);
                 setItemCounts({});
               }}
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                isSelected
+                  ? "bg-[#f6b100] text-black"
+                  : "bg-[#262626] text-gray-400 hover:bg-[#333]"
+              }`}
+              style={!isSelected ? { backgroundColor: menu.bgColor + '40' } : {}}
             >
-              <div className="flex items-center justify-between w-full">
-                <h1 className="text-white text-sm sm:text-base font-semibold truncate">
-                  {menu.icon} {menu.name}
-                </h1>
-                {isSelected && (
-                  <GrRadialSelected className="text-white flex-shrink-0" size={16} />
-                )}
-              </div>
-              <p className="text-gray-300 text-xs sm:text-sm">
-                {menu.items.length} {menu.items.length === 1 ? 'Item' : 'Items'}
-              </p>
-            </div>
+              {menu.icon} {menu.name} ({menu.items.length})
+            </button>
           );
         })}
       </div>
 
-      <hr className="border-[#2a2a2a] border-t-2 mx-4 sm:mx-6 lg:mx-10" />
-
-      {/* Menu Items */}
+      {/* Menu Items Grid */}
       {selected && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 sm:px-6 lg:px-10 py-4">
-          {selected.items.length > 0 ? (
-            selected.items.map((item) => {
-              const count = itemCounts[item._id] || 0;
-              
-              return (
-                <div
-                  key={item._id}
-                  className="flex flex-col bg-[#1a1a1a] rounded-lg p-4 hover:bg-[#2a2a2a] transition-colors duration-200"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-white font-semibold text-base sm:text-lg">
-                        {item.name}
-                      </h3>
-                      {item.description && (
-                        <p className="text-gray-400 text-xs mt-1 line-clamp-2">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                    {!item.isAvailable && (
-                      <span className="text-xs bg-red-500 bg-opacity-20 text-red-500 px-2 py-1 rounded">
-                        Unavailable
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-[#f6b100] font-bold text-lg">
-                      ₹{item.price}
+        <div className="grid grid-cols-2 gap-2 p-3 overflow-y-auto">
+          {selected.items.map((item) => {
+            const count = itemCounts[item._id] || 0;
+            return (
+              <div
+                key={item._id}
+                className="bg-[#262626] rounded-lg p-3 hover:bg-[#333] transition-colors"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-white font-medium text-sm truncate">
+                    {item.name}
+                  </h3>
+                  {!item.isAvailable && (
+                    <span className="text-[10px] bg-red-500 bg-opacity-20 text-red-500 px-1.5 py-0.5 rounded">
+                      Unavail
                     </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => decrement(item._id, e)}
-                        className="w-8 h-8 rounded-full bg-[#333] text-white flex items-center justify-center hover:bg-[#444] transition-colors"
-                        disabled={!item.isAvailable}
-                      >
-                        −
-                      </button>
-                      <span className="text-white font-semibold w-6 text-center">
-                        {count}
-                      </span>
-                      <button
-                        onClick={(e) => increment(item._id, e)}
-                        className="w-8 h-8 rounded-full bg-[#f6b100] text-black flex items-center justify-center hover:bg-yellow-500 transition-colors"
-                        disabled={!item.isAvailable || count >= 10}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
+                  )}
+                </div>
 
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-gray-400 text-xs">
-                      {item.preparationTime || 15} min
+                <p className="text-[#f6b100] font-bold text-base mb-2">
+                  ₹{item.price}
+                </p>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => decrement(item._id, e)}
+                      className="w-6 h-6 rounded-full bg-[#333] text-white flex items-center justify-center text-sm"
+                      disabled={!item.isAvailable}
+                    >
+                      −
+                    </button>
+                    <span className="text-white text-sm w-4 text-center">
+                      {count}
                     </span>
                     <button
-                      onClick={(e) => handleAddToCart(item, e)}
-                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-semibold transition-colors ${
-                        count > 0
-                          ? "bg-[#2e4a40] text-[#02ca3a] hover:bg-[#3a5e4a]"
-                          : "bg-[#333] text-gray-400 cursor-not-allowed"
-                      }`}
-                      disabled={count === 0 || !item.isAvailable}
+                      onClick={(e) => increment(item._id, e)}
+                      className="w-6 h-6 rounded-full bg-[#f6b100] text-black flex items-center justify-center text-sm"
+                      disabled={!item.isAvailable || count >= 10}
                     >
-                      <FaShoppingCart size={14} />
-                      Add
+                      +
                     </button>
                   </div>
+                  <button
+                    onClick={(e) => handleAddToCart(item, e)}
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      count > 0
+                        ? "bg-[#2e4a40] text-green-500"
+                        : "bg-[#333] text-gray-500"
+                    }`}
+                    disabled={count === 0}
+                  >
+                    <FaShoppingCart size={12} />
+                  </button>
                 </div>
-              );
-            })
-          ) : (
-            <p className="col-span-full text-center text-gray-500 py-10">
-              No items in this category
-            </p>
-          )}
+
+                {item.preparationTime && (
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {item.preparationTime} min
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
