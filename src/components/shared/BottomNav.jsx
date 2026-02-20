@@ -14,7 +14,7 @@ const BottomNav = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [guestCount, setGuestCount] = useState(1); // Default to 1
+  const [guestCount, setGuestCount] = useState(1);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -32,23 +32,20 @@ const BottomNav = () => {
   };
   
   const decrement = () => {
-    if (guestCount <= 1) return; // Minimum 1 guest
+    if (guestCount <= 1) return;
     setGuestCount((prev) => prev - 1);
   };
 
   const isActive = (path) => location.pathname === path;
 
   const handleCreateOrder = () => {
-    // Only guests is mandatory, name and phone are optional
     if (guestCount === 0) {
       enqueueSnackbar("Please enter number of guests!", { variant: "warning" });
       return;
     }
 
-    // Generate anonymous name if not provided
     const customerName = name.trim() || `Guest ${Math.floor(Math.random() * 1000)}`;
     
-    // Send data to store
     dispatch(setCustomer({ 
       name: customerName, 
       phone: phone.trim() || "", 
@@ -59,56 +56,61 @@ const BottomNav = () => {
     closeModal();
   };
 
-  // Don't show bottom nav on auth page
   if (location.pathname === "/auth") return null;
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around items-center z-50">
         <button
           onClick={() => navigate("/")}
           className={`flex items-center justify-center font-bold transition-colors duration-200 ${
             isActive("/") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab] hover:text-[#f5f5f5]"
-          } w-[300px] rounded-[20px]`}
+          } w-1/4 sm:w-[300px] rounded-[20px] py-2`}
         >
-          <FaHome className="inline mr-2" size={20} /> <p>Home</p>
+          <FaHome className="text-xl sm:mr-2" /> 
+          <span className="hidden sm:inline">Home</span>
         </button>
+        
         <button
           onClick={() => navigate("/orders")}
           className={`flex items-center justify-center font-bold transition-colors duration-200 ${
             isActive("/orders") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab] hover:text-[#f5f5f5]"
-          } w-[300px] rounded-[20px]`}
+          } w-1/4 sm:w-[300px] rounded-[20px] py-2`}
         >
-          <MdOutlineReorder className="inline mr-2" size={20} /> <p>Orders</p>
+          <MdOutlineReorder className="text-xl sm:mr-2" /> 
+          <span className="hidden sm:inline">Orders</span>
         </button>
+        
         <button
           onClick={() => navigate("/tables")}
           className={`flex items-center justify-center font-bold transition-colors duration-200 ${
             isActive("/tables") ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab] hover:text-[#f5f5f5]"
-          } w-[300px] rounded-[20px]`}
+          } w-1/4 sm:w-[300px] rounded-[20px] py-2`}
         >
-          <MdTableBar className="inline mr-2" size={20} /> <p>Tables</p>
+          <MdTableBar className="text-xl sm:mr-2" /> 
+          <span className="hidden sm:inline">Tables</span>
         </button>
+        
         <button 
-          className="flex items-center justify-center font-bold text-[#ababab] hover:text-[#f5f5f5] w-[300px] transition-colors duration-200"
+          className="flex items-center justify-center font-bold text-[#ababab] hover:text-[#f5f5f5] w-1/4 sm:w-[300px] transition-colors duration-200"
         >
-          <CiCircleMore className="inline mr-2" size={20} /> <p>More</p>
+          <CiCircleMore className="text-xl sm:mr-2" /> 
+          <span className="hidden sm:inline">More</span>
         </button>
 
         <button
           disabled={isActive("/tables") || isActive("/menu")}
           onClick={openModal}
-          className={`absolute bottom-6 bg-[#F6B100] text-[#f5f5f5] rounded-full p-4 items-center transition-transform duration-200 hover:scale-110 ${
+          className={`absolute -top-6 bg-[#F6B100] text-[#f5f5f5] rounded-full p-3 sm:p-4 items-center transition-transform duration-200 hover:scale-110 ${
             (isActive("/tables") || isActive("/menu")) ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
-          <BiSolidDish size={40} />
+          <BiSolidDish size={24} className="sm:size-40" />
         </button>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Create New Order">
-        <div className="space-y-4">
-          {/* Guest count - Required */}
+        <div className="space-y-4 p-4">
           <div>
             <label className="block mb-2 text-sm font-medium text-[#ababab]">
               Number of Guests <span className="text-red-500">*</span>
@@ -134,56 +136,46 @@ const BottomNav = () => {
             </div>
           </div>
 
-          {/* Customer Name - Optional */}
           <div>
             <label className="block text-[#ababab] mb-2 text-sm font-medium">
               Customer Name <span className="text-gray-500">(Optional)</span>
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                type="text"
-                placeholder="Enter customer name"
-                className="bg-transparent flex-1 text-white focus:outline-none"
-              />
-            </div>
-            <p className="text-xs text-[#ababab] mt-1">
-              If left empty, will be set as "Guest XXX"
-            </p>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              type="text"
+              placeholder="Enter customer name"
+              className="w-full bg-[#1f1f1f] text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
           </div>
 
-          {/* Customer Phone - Optional */}
           <div>
             <label className="block text-[#ababab] mb-2 text-sm font-medium">
               Phone Number <span className="text-gray-500">(Optional)</span>
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                type="tel"
-                placeholder="+91-9999999999"
-                className="bg-transparent flex-1 text-white focus:outline-none"
-              />
-            </div>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              type="tel"
+              placeholder="Enter phone number"
+              className="w-full bg-[#1f1f1f] text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="button"
               onClick={closeModal}
-              className="flex-1 bg-gray-600 text-white rounded-lg py-3 hover:bg-gray-700 transition-colors"
+              className="w-full sm:flex-1 bg-gray-600 text-white rounded-lg py-3 hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleCreateOrder}
-              className="flex-1 bg-[#F6B100] text-[#1f1f1f] rounded-lg py-3 font-semibold hover:bg-yellow-500 transition-colors"
+              className="w-full sm:flex-1 bg-[#F6B100] text-[#1f1f1f] rounded-lg py-3 font-semibold hover:bg-yellow-500 transition-colors"
             >
-              Continue to Tables
+              Continue
             </button>
           </div>
         </div>
